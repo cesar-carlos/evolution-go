@@ -51,6 +51,7 @@ type UserInfo struct {
 	VerifiedName *types.VerifiedName
 	Status       string
 	PictureID    string
+	PictureURL   string
 	Devices      []types.JID
 	LID          *string // The local ID (if available)
 }
@@ -159,7 +160,8 @@ func (u *userService) GetUser(data *CheckUserStruct, instance *instance_model.In
 		if !ok {
 			return nil, errors.New("invalid phone number")
 		}
-		jids = append(jids, jid)
+		// usync IQ also requires a digits-only user JID (no "+" prefix).
+		jids = append(jids, utils.CanonicalJID(jid).ToNonAD())
 	}
 	resp, err := client.GetUserInfo(context.Background(), jids)
 	if err != nil {
@@ -179,11 +181,20 @@ func (u *userService) GetUser(data *CheckUserStruct, instance *instance_model.In
 			}
 		}
 
+		pictureURL := ""
+		pic, picErr := u.fetchProfilePicture(client, jid, true, 25*time.Second)
+		if picErr != nil {
+			u.loggerWrapper.GetLogger(instance.Id).LogWarn("[%s] Failed to enrich PictureURL for %s: %v", instance.Id, jid, picErr)
+		} else if pic != nil {
+			pictureURL = pic.URL
+		}
+
 		// Converter para nossa estrutura UserInfo que inclui LID
 		info := UserInfo{
 			VerifiedName: whatsmeowInfo.VerifiedName,
 			Status:       whatsmeowInfo.Status,
 			PictureID:    whatsmeowInfo.PictureID,
+			PictureURL:   pictureURL,
 			Devices:      whatsmeowInfo.Devices,
 			LID:          lidStr,
 		}
@@ -315,6 +326,23 @@ func (u *userService) mergeCheckUserResults(original, retry *CheckUserCollection
 	return merged
 }
 
+// fetchProfilePicture requests a profile picture URL for jid.
+// Never pass ExistingID here: when the picture is unchanged whatsmeow returns
+// nil with no error and no URL.
+func (u *userService) fetchProfilePicture(client *whatsmeow.Client, jid types.JID, preview bool, timeout time.Duration) (*types.ProfilePictureInfo, error) {
+	jid = utils.CanonicalJID(jid).ToNonAD()
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	pic, err := client.GetProfilePictureInfo(ctx, jid, &whatsmeow.GetProfilePictureParams{
+		Preview: preview,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get profile picture for %s: %w", jid, err)
+	}
+	return pic, nil
+}
+
 func (u *userService) GetAvatar(data *GetAvatarStruct, instance *instance_model.Instance) (*types.ProfilePictureInfo, error) {
 	client, err := u.ensureClientConnected(instance.Id)
 	if err != nil {
@@ -341,21 +369,12 @@ func (u *userService) GetAvatar(data *GetAvatarStruct, instance *instance_model.
 	jid = utils.CanonicalJID(jid).ToNonAD()
 
 	u.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Requesting avatar for JID: %s, Preview: %v", instance.Id, jid, data.Preview)
-
-	var pic *types.ProfilePictureInfo
-
-	// 🔒 FIX: Adicionar timeout ao contexto para evitar que a requisição trave indefinidamente
-	// Usar timeout maior que o padrão do sendIQ (75s) para dar tempo suficiente
-	ctx, cancel := context.WithTimeout(context.Background(), 80*time.Second)
-	defer cancel()
-
 	u.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Starting GetProfilePictureInfo request...", instance.Id)
-	pic, err = client.GetProfilePictureInfo(ctx, jid, &whatsmeow.GetProfilePictureParams{
-		Preview: data.Preview,
-	})
+
+	pic, err := u.fetchProfilePicture(client, jid, data.Preview, 80*time.Second)
 	if err != nil {
 		u.loggerWrapper.GetLogger(instance.Id).LogError("[%s] GetProfilePictureInfo failed: %v", instance.Id, err)
-		return nil, fmt.Errorf("get profile picture for %s: %w", jid, err)
+		return nil, err
 	}
 
 	if pic == nil {
