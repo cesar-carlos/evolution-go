@@ -1,0 +1,73 @@
+---
+description: Padrões Go modernos do Evolution Go — packages, erros, context, testes
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# Padrões Go (projeto)
+
+## Pacotes e arquivos
+
+- `pkg/<domínio>/{handler,service,repository,model}` — packages `chat_handler`, `chat_service`, etc.
+- Alias de import quando precisar: `chat_service "…/pkg/chat/service"`.
+- Entry point só em `cmd/evolution-go`.
+- Arquivo novo por tema coeso (`send_text.go`, `send_media.go`) em vez de crescer monólitos.
+
+## Nomenclatura
+
+| Tipo | Estilo | Exemplo |
+|------|--------|---------|
+| Locais | camelCase | `instanceName` |
+| Constantes | PascalCase / UPPER_CASE | `MaxRetries` |
+| Structs / interfaces | PascalCase | `BodyStruct`, `ChatService` |
+| Impl | não exportada | `chatHandler`, `chatService` |
+| Construtores | `New...` | `NewChatHandler` |
+
+## Interfaces e DI
+
+```go
+type ChatService interface {
+    ChatPin(data *BodyStruct, instance *instance_model.Instance) (string, error)
+}
+
+type chatService struct {
+    whatsmeowService whatsmeow_service.WhatsmeowService
+    loggerWrapper    *logger_wrapper.LoggerManager
+}
+```
+
+- Depender de interface; injetar no construtor; **não** criar globais mutáveis novos.
+- Interface no pacote do **consumidor** quando só ele usa (Go idiomático); no provedor quando há vários consumidores (padrão atual do projeto).
+
+## Erros e context (moderno)
+
+```go
+func (s *chatService) ChatPin(ctx context.Context, data *BodyStruct, inst *instance_model.Instance) (string, error) {
+    if data.Chat == "" {
+        return "", fmt.Errorf("chat is required")
+    }
+    // ...
+    return ts, fmt.Errorf("pin chat %s: %w", data.Chat, err)
+}
+```
+
+- Em APIs **novas** (arquivo/função nova): preferir `context.Context` primeiro; na borda HTTP usar `c.Request.Context()`.
+- Ao **estender** service/handler existente: **manter a assinatura/estilo local** (`fork-community-scope`) — não migrar o pacote inteiro para context no mesmo PR.
+- Wrapping com `%w`; `errors.Is` / `As`; sem `panic` em request path.
+- Handler: 400 validação, 4xx/5xx conforme o caso; `gin.H{"error": ...}` alinhado ao módulo.
+
+## Concorrência
+
+- Toda goroutine tem fim claro (ctx cancel, `errgroup`, ou owned shutdown).
+- Sem `time.Sleep` para sincronizar I/O em código novo.
+- Não copiar maps/slices compartilhados sem proteção ou ownership explícito.
+
+## Testes e qualidade
+
+```bash
+make fmt && make lint && make test
+make swagger   # se mudou HTTP
+```
+
+- Regras novas: preferir table-driven tests no pacote.
+- Comentários só no “porquê”; Swagger comments nos handlers exportados.

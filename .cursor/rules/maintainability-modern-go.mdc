@@ -1,0 +1,81 @@
+---
+description: Manutenção, anti-patterns, anti-god-class e Go moderno para código fácil de entender
+alwaysApply: true
+---
+
+# Manutenção e código moderno
+
+Objetivo: código **fácil de ler, testar e alterar**. Preferir clareza a “cleverness”.
+
+**Conflito com contribuição ao fork:** ver `fork-community-scope`. Em PRs para o upstream, **escopo mínimo e estilo local vencem**. Limites e extrações abaixo aplicam-se sobretudo a **código novo** ou a PRs `refactor:` dedicados — não como desculpa para tocar dezenas de arquivos num `fix:`/`feat:`.
+
+## Limites práticos (código novo / PR refactor explícito)
+
+| Unidade | Alvo | Ação se passar |
+|---------|------|----------------|
+| Arquivo `.go` | ≤ ~400 linhas | Extrair helpers, DTOs ou casos de uso |
+| Função | ≤ ~40–50 linhas | Quebrar em passos nomeados |
+| Struct com deps | ≤ ~5–7 campos injetados | Dividir serviço / facade |
+| Interface | Poucos métodos coesos | ISP — interfaces por consumidor |
+| Pacote | Um domínio claro | Não misturar `send`+`media`+`poll` sem necessidade |
+
+Arquivos legados enormes (ex.: `send_service.go`): em **feat/fix**, mudar só o trecho necessário no estilo atual. Extração ampla → PR `refactor:` separado.
+
+## Anti-god-class / god-file
+
+Sinais de problema:
+- Um service com dezenas de métodos sem tema único
+- Struct que conhece HTTP + DB + WhatsApp + storage + eventos
+- `switch`/`if` intermináveis por tipo de mensagem no mesmo arquivo
+- Duplicação copy-paste entre handlers (bind → validate → call → json)
+
+Como evitar / corrigir:
+1. **Um caso de uso por função** (ou arquivo: `send_text.go`, `send_media.go` no mesmo package).
+2. Extrair **helpers privados** e tipos pequenos no pacote.
+3. Compartilhar via pacote util **só** o que for realmente transversal (`pkg/utils`).
+4. Novos envios/features: estender por arquivo/função coesa, não inchando o mesmo monólito.
+
+## Anti-patterns banidos em código novo
+
+- Lógica de negócio no **handler** Gin
+- Repository importando Gin / conhecendo HTTP
+- Globais mutáveis novos (`var ClientMap = ...`) — preferir DI
+- `panic` / `log.Fatal` em hot path de request
+- Ignorar `error` (`_ = err`) sem justificativa
+- Comparar erro por string; usar `%w`, `errors.Is` / `As`
+- `time.Sleep` fixo para “esperar conexão” em código novo (preferir wait/ready/context)
+- Goroutine sem cancelamento / sem ownership claro
+- Comentários que só repetem o nome da função
+- Abstração “Clean Architecture Java” (pastas `controllers/` globais) — manter `pkg/<domínio>/`
+- Interface sem consumidor (YAGNI)
+- Boolean soup (`doX(a, true, false, true)`) — usar options/structs
+
+## Go moderno (preferir)
+
+```go
+// context desde a borda HTTP
+ctx := c.Request.Context()
+result, err := s.doSomething(ctx, input)
+
+// erros com contexto
+return fmt.Errorf("send text to %s: %w", chat, err)
+
+// zero value / early return
+if input.Chat == "" {
+    return nil, ErrChatRequired
+}
+```
+
+- `context.Context` como **primeiro** parâmetro em I/O novo
+- `min`/`max` built-in, `slices`/`maps` da stdlib quando simplificarem
+- Testes de tabela (`t.Run`) para regras novas
+- Construtores `New...` retornando interface ou struct pequena
+- Imutabilidade prática: não compartilhar maps/slices sem disciplina; documentar ownership
+
+## Checklist antes de concluir uma mudança
+
+- [ ] Consigo explicar o fluxo em 30s?
+- [ ] Handler só entrega HTTP?
+- [ ] Service não ficou mais “deus” do que já era?
+- [ ] Erros e context tratados?
+- [ ] Nome do arquivo/função revela a intenção?

@@ -1,0 +1,53 @@
+---
+description: Contribuição upstream — fluxo, commits, checklist e PRs focados (comunidade)
+alwaysApply: true
+---
+
+# Contribuição (upstream Evolution Go)
+
+Fontes do projeto: `docs/wiki/desenvolvimento/contributing.md` + `.github/pull_request_template.md`  
+Disciplina de fork/escopo: rule `fork-community-scope` (sempre aplicar).
+
+**Repo / Issues / PRs:** https://github.com/evolution-foundation/evolution-go
+
+## Como contribuir (comunidade)
+
+- Bugs, features, docs e correções são bem-vindos.
+- Mudanças grandes: **abrir issue / alinhar** com maintainers antes (evita retrabalho).
+- Antes de issue: buscar duplicatas, testar na versão (`VERSION`), anexar logs/ambiente.
+- Templates: `.github/ISSUE_TEMPLATE/` (EN/PT).
+- Segurança: **não** issue pública — `suporte@evofoundation.com.br`.
+
+## Fluxo (fork → upstream)
+
+1. Branch `feature/...` ou `fix/...` a partir de `main` atualizada (não commitar feature direto em `main`)
+2. Implementar **só o escopo** · imitar estilo do módulo
+3. `make fmt` / `make lint` **nos arquivos da mudança** · testar (`make check` se possível)
+4. PR pequeno para https://github.com/evolution-foundation/evolution-go · template · `Closes #N`
+5. Review: 1+ maintainer · responder no **mesmo** PR (não abrir outro)
+
+> Se `origin` já for o upstream, não inventar remote `upstream` desnecessário; o importante é PR focado e sync com `main` remota.
+
+## Conventional Commits
+
+`feat:` · `fix:` · `docs:` · `refactor:` · `chore:` · `perf:`  
+Uma ideia por commit; mensagem explica o **porquê**. Corpo opcional `Closes #N`.
+
+## Checklist do PR
+
+- [ ] Um único concern; poucos arquivos; sem drive-by
+- [ ] Estilo igual ao código vizinho
+- [ ] `make fmt` / `make lint` (sem reformatar o repo)
+- [ ] `make swagger` **somente** se endpoints mudaram
+- [ ] Wiki / `.env.example` só se contrato/env mudou
+- [ ] `make test` / teste manual do caminho alterado
+- [ ] Breaking change documentada (se houver)
+
+## Make (targets reais)
+
+`make dev` · `make build` · `make test` · `make fmt` · `make lint` · `make swagger` · `make deps` · `make check`  
+Não usar `make build-local`.
+
+## Conduta
+
+Respeito, feedback construtivo, paciência no review. Force-push na branch do PR durante review é aceitável.

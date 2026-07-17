@@ -1,0 +1,53 @@
+---
+description: Disciplina de contribuição em fork/comunidade — escopo mínimo, estilo do upstream, PRs focados
+alwaysApply: true
+---
+
+# Fork / comunidade — disciplina de mudança
+
+Este repo é um **fork** de um projeto comunitário. O agente e o contribuidor devem facilitar review e merge no upstream, não “reescrever o projeto”.
+
+Fontes: [Kubernetes PR guide](https://github.com/kubernetes/community/blob/main/contributors/guide/pull-requests.md), [GitHub — helping others review](https://docs.github.com/en/pull-requests), práticas comuns de CONTRIBUTING (1 PR = 1 concern).
+
+## Princípio #1 — respeitar o código existente
+
+- **Imitar** naming, package layout (`chat_handler` / `chat_service`), shape de respostas `gin.H`, DI e padrões do módulo vizinho.
+- Não impor estilo pessoal, “Go moderno” ou Clean Architecture se isso divergir do arquivo tocado.
+- Código legado imperfeito: **corrija só o necessário** para a tarefa; não “aproveite” para limpar o pacote inteiro.
+- Melhorias estruturais (extrair god file, renomear em massa) → **PR/commit separado**, nunca misturado com feat/fix.
+
+## Princípio #2 — um escopo, poucos arquivos
+
+- **1 PR / 1 commit lógico = 1 concern** (um bug, uma feature, um refactor, um docs).
+- Não misturar: fix + refactor + fmt em arquivos não relacionados + “já que estou aqui…”.
+- Evitar PRs que “atravessam o repositório”; se tocar muitos pacotes sem necessidade, **dividir**.
+- Alvo: diff revisável em ~15–20 min; preferir vários PRs pequenos a um monólito.
+- Antes de editar: listar arquivos no escopo; se a lista crescer, parar e cortar o escopo.
+
+## Princípio #3 — o que NÃO fazer no mesmo PR
+
+| Evitar no mesmo PR | Fazer em vez disso |
+|--------------------|--------------------|
+| Reformatar/lint arquivos fora do diff | Só fmt nos arquivos da mudança |
+| Renomear símbolos “por limpeza” | PR `refactor:` dedicado |
+| Atualizar deps não pedidas | PR `chore:` separado |
+| Reescrever handler vizinho “no mesmo estilo” | Só o caminho da feature/bug |
+| Regenerar swagger sem mudar API | Não tocar `docs/swagger*` |
+| “Prefactor” grande + feature | Prefactor em PR prévio |
+
+## Princípio #4 — estilo local > regra genérica
+
+Quando `maintainability-modern-go` ou SOLID conflitar com o estilo do arquivo:
+
+1. **Seguir o estilo local** do módulo/arquivo.
+2. Código **totalmente novo** (arquivo/pacote novo): aí aplicar práticas modernas e anti-god-class.
+3. Extrair monólito só se for **necessário** para a mudança ou em PR `refactor:` explícito.
+
+## Checklist de escopo (antes de commit/PR)
+
+- [ ] Consigo descrever a mudança em **uma frase**?
+- [ ] Todo arquivo no diff é **necessário** para essa frase?
+- [ ] O estilo parece escrito pelo mesmo autor do módulo?
+- [ ] Zero “drive-by” (typos, imports, renames) fora do escopo?
+- [ ] Issue/PR linkados (`Closes #N`) quando existir?
+- [ ] Self-review do diff feito (sem debug, sem comentários mortos)?

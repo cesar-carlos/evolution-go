@@ -1,0 +1,45 @@
+---
+description: Persistência dual DB, eventos, MinIO, env e Docker alinhados ao .env.example
+globs: pkg/**/repository/**/*.go, pkg/events/**/*.go, pkg/storage/**/*.go, pkg/config/**/*.go, docker-compose*.yml, Dockerfile, .env.example
+alwaysApply: false
+---
+
+# Persistência, Eventos, Storage e Deploy
+
+## Banco / Repository
+
+- Interfaces `XxxRepository` + struct privada `xxxRepository`.
+- **Dual DB**: `POSTGRES_AUTH_DB` (sessões whatsmeow) + `POSTGRES_USERS_DB` (instances, messages, labels…).
+- Transações multi-agregado no **service**; repository só persistência.
+- Flags do `.env.example` raiz: `DATABASE_SAVE_MESSAGES`, `CONNECT_ON_STARTUP`, etc.
+- Narrativa: `docs/wiki/conceitos-core/database.md` (validar contra código se divergir).
+
+## Eventos (`pkg/events`)
+
+Adapters: `webhook/`, `websocket/`, `rabbitmq/`, `nats/` + `interfaces/`.  
+Não acoplar Gin ao broker. Guia: `docs/wiki/recursos-avancados/events-system.md`.
+
+## Storage (`pkg/storage`)
+
+- Interfaces em `pkg/storage/interfaces`; MinIO em `pkg/storage/minio`.
+- Bucket default no `.env.example` raiz: **`evolution-media`** (wiki às vezes cita outro nome).
+- Credenciais só via env (`MINIO_*`).
+
+## Config / env
+
+- Ler via `pkg/config` — não espalhar `os.Getenv` em handlers.
+- **Fonte de env**: `.env.example` na raiz (inclui `PASSKEY_PUBLIC_URL`, `EVOLUTION_OPERATOR_EMAIL`, `PROXY_PROTOCOL`).
+- `docker/examples/.env.example` espelha docs antigas (porta 4000) — não preferir.
+- Nunca commitar `.env` real.
+
+## Docker
+
+- Imagem: `evoapicloud/evolution-go`.
+- Compose local: app + Postgres; health `/server/ok`; porta `${SERVER_PORT:-8081}` no compose do repo.
+- Manter compatível com vars do `.env.example` raiz.
+- Guia narrativo: `docs/wiki/deploy-producao/docker-deployment.md` (ajustar mentalmente a porta).
+
+## Observabilidade
+
+- Logs por instância: `pkg/logger` · Telemetria: `pkg/telemetry` (sem PII).
+- `WADEBUG`, `LOGTYPE` conforme env.

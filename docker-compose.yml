@@ -1,0 +1,64 @@
+services:
+  evolution-go:
+    image: evoapicloud/evolution-go:latest
+    container_name: evolution-go
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-8081}:${SERVER_PORT:-8081}"
+    env_file:
+      - .env
+    environment:
+      SERVER_PORT: ${SERVER_PORT:-8081}
+      POSTGRES_AUTH_DB: postgresql://${POSTGRES_USER:-evogo}:${POSTGRES_PASSWORD}@postgres:5432/evogo_auth?sslmode=disable
+      POSTGRES_USERS_DB: postgresql://${POSTGRES_USER:-evogo}:${POSTGRES_PASSWORD}@postgres:5432/evogo_users?sslmode=disable
+    volumes:
+      - evolution_data:/app/dbdata
+      - evolution_logs:/app/logs
+    networks:
+      - evolution_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:${SERVER_PORT:-8081}/server/ok"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: evolution-go-postgres
+    restart: unless-stopped
+    command: >
+      postgres
+      -c max_connections=500
+      -c idle_in_transaction_session_timeout=60000
+      -c idle_session_timeout=300000
+      -c statement_timeout=120000
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-evogo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/examples/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    networks:
+      - evolution_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-evogo}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  evolution_data:
+    driver: local
+  evolution_logs:
+    driver: local
+  postgres_data:
+    driver: local
+
+networks:
+  evolution_network:
+    driver: bridge

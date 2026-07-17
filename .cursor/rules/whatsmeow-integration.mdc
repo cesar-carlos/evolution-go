@@ -1,0 +1,35 @@
+---
+description: whatsmeow, sessões WhatsApp, QR e passkey (WebAuthn)
+globs: pkg/whatsmeow/**/*.go, pkg/passkey/**/*.go, pkg/**/service/**/*.go, passkey-helper/**
+alwaysApply: false
+---
+
+# whatsmeow, sessões e passkey
+
+## Onde vive
+
+- Protocolo: `pkg/whatsmeow/service`
+- Domínios (`chat`, `group`, `sendMessage`, …) → `WhatsmeowService` / `*whatsmeow.Client`
+- Sessão = `instance` (`instance_model.Instance`, mapa `clientPointer`)
+- Passkey: `pkg/passkey` + extensão `passkey-helper/` (não `tools/passkey-helper`)
+
+## Regras whatsmeow
+
+1. Não chamar protocolo WhatsApp do handler — só via service do domínio / `whatsmeow/service`.
+2. Garantir cliente conectado (`ensureClientConnected` / `StartInstance`) antes de operar.
+3. Sem sessão → erro claro (`no active session found`), não panic.
+4. Preferir tipos `go.mau.fi/whatsmeow/types` (JIDs) quando o módulo já usa.
+5. Propagar `context` quando a API permitir; logs com `instanceId`.
+
+## Passkey / QR
+
+- Guia: `docs/wiki/guias-api/passkey-pairing.md`
+- Env: `PASSKEY_PUBLIC_URL` = URL **pública** desta API (alcançável pelo browser / extensão). Não usar `localhost` se o browser estiver em outra máquina.
+- Fluxo QR clássico: `docs/wiki/recursos-avancados/qrcode-connection.md` (validar paths contra `pkg/routes`).
+- Não inventar bypass headless de WebAuthn; não logar credenciais de sessão.
+
+## Cuidados
+
+- Mudança em whatsmeow afeta todas as instâncias — localizar e testar.
+- Evitar proliferar `time.Sleep` em hot paths; se legado exigir, documentar.
+- Licença headless: `EVOLUTION_OPERATOR_EMAIL` no `.env.example` (fluxo `/license` / register auto).

@@ -1,0 +1,58 @@
+---
+description: Convenções Gin, auth apikey, rotas, respostas HTTP e Swagger/swaggo
+globs: pkg/**/handler/**/*.go, pkg/routes/**/*.go, pkg/middleware/**/*.go, docs/**/*
+alwaysApply: false
+---
+
+# Gin, API e Swagger
+
+## Autenticação
+
+- Header: **`apikey`** (não Bearer), conforme `docs/wiki/conceitos-core/authentication.md`.
+- **GLOBAL_API_KEY** — operações admin (ex.: criar instância, listar todas).
+- **Token da instância** — operações no contexto daquela sessão; middleware resolve `instance` via `ctx.MustGet("instance")`.
+- Em código/docs novas: preferir identificação por token no middleware; evitar exigir `instanceName` em body/query salvo endpoints admin por ID já existentes.
+
+## Handlers
+
+```go
+func (c *chatHandler) ChatPin(ctx *gin.Context) {
+    getInstance := ctx.MustGet("instance")
+    instance, ok := getInstance.(*instance_model.Instance)
+    if !ok {
+        ctx.JSON(http.StatusInternalServerError, gin.H{"error": "instance not found"})
+        return
+    }
+    var data *chat_service.BodyStruct
+    if err := ctx.ShouldBindBodyWithJSON(&data); err != nil {
+        ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    // validar → service → gin.H{"message":"success","data":...}
+}
+```
+
+- Status via `net/http` (`http.StatusBadRequest`, …).
+- Sucesso alinhado ao módulo: frequentemente `{"message":"success","data":...}`.
+
+## Rotas
+
+- Registrar em `pkg/routes`; middleware em `pkg/middleware`.
+- Agrupar por domínio: `/instance`, `/send`, `/message`, `/chat`, `/group`, `/license`, …
+- Fonte de rotas reais: **código + Swagger**, não inventar paths da wiki desatualizada (ex.: `/message/downloadmedia` vs nomes antigos).
+
+## Swagger
+
+Anotar handlers públicos (`@Summary`, `@Tags`, `@Router`, …). Após mudar contratos:
+
+```bash
+make swagger
+```
+
+Não editar `docs/docs.go` / `swagger.json` / `swagger.yaml` à mão.
+
+## Smoke tests
+
+- Health: `GET /server/ok`
+- Swagger UI: `/swagger/index.html` (porta = `SERVER_PORT`, não assumir 4000)
+- Guias narrativos: `docs/wiki/guias-api/*` (ex.: `api-user.md`, `passkey-pairing.md` — não `api-users.md` / `api-webhooks.md`)

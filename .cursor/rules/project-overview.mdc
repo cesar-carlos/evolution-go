@@ -1,0 +1,57 @@
+---
+description: Contexto geral do Evolution Go — stack, estrutura e princípios do projeto
+alwaysApply: true
+---
+
+# Evolution Go — Visão do Projeto
+
+WhatsApp API gateway em Go (módulo `github.com/evolution-foundation/evolution-go`).
+Upstream canônico: https://github.com/evolution-foundation/evolution-go  
+Ignorar URLs antigas da wiki (`git.evoai.app`, `git.evochat.com`, `EvolutionAPI/...`).
+
+## Versão e porta
+
+- Versão do app: ler `VERSION` / `CHANGELOG.md` (ex.: **0.7.2**) — não usar “docs 1.0.0” da wiki.
+- Go: seguir `go.mod` (ex.: **1.25.0**), não assumir só “1.24+” da wiki.
+- Porta: `SERVER_PORT` do **`.env.example` na raiz** (default **8080**); compose local pode usar **8081**. A wiki cita `4000` — tratar como desatualizado.
+
+## Stack
+
+- **Gin** — HTTP/REST · **PostgreSQL** (+ SQLite auth whatsmeow) · **whatsmeow**
+- **Swagger (swaggo)** · Eventos: Webhook, WebSocket, RabbitMQ, NATS · **MinIO/S3**
+- Licença embutida (`/license/*`, `EVOLUTION_OPERATOR_EMAIL`) · Passkey (`pkg/passkey`)
+
+## Layout
+
+```
+cmd/evolution-go/     # entrypoint
+pkg/<domínio>/        # handler | service | repository | model
+pkg/routes/           # registro de rotas
+pkg/middleware/       # auth (apikey), instance
+pkg/events/           # webhook, ws, rabbitmq, nats
+pkg/whatsmeow/        # cliente WhatsApp
+pkg/passkey/          # WebAuthn pairing
+pkg/sendMessage/      # envio
+pkg/poll/ · pkg/core/ · pkg/telemetry/
+pkg/config/           # env
+manager/              # UI manager
+passkey-helper/       # extensão browser (não tools/passkey-helper)
+```
+
+## Regras de ouro
+
+1. Preferir padrões do módulo vizinho a inventar estrutura nova.
+2. **Handler → Service → Repository** (nunca o inverso).
+3. Handlers finos; DI via interfaces + `New...`; structs concretas não exportadas.
+4. **Fork/comunidade:** escopo mínimo, sem drive-by — `fork-community-scope`.
+5. Código novo: fácil de manter — `maintainability-modern-go` (sem expandir monólitos).
+6. Fonte da verdade: código + Swagger + `.env.example` raiz; wiki é narrativa — `documentation`.
+7. Não commitar `.env`, secrets nem binários sem necessidade.
+8. Segurança: não abrir issue pública — `suporte@evofoundation.com.br`.
+
+## Precedência entre rules (se conflitar)
+
+1. `fork-community-scope` — escopo e estilo local do arquivo tocado  
+2. Padrões reais do módulo vizinho / código existente  
+3. `architecture-solid-clean` + `maintainability-modern-go` — sobretudo em **código novo** ou PR `refactor:`  
+4. Wiki — só como apoio; se divergir, seguir código

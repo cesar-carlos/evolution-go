@@ -1,0 +1,55 @@
+---
+description: SOLID, Clean Code, design patterns e combate a god classes no layout do projeto
+alwaysApply: true
+---
+
+# SOLID, Clean Code e Design Patterns
+
+Aplicar de forma **prática e idiomática em Go**. Clareza > abstração prematura. Código novo deve ser mais fácil de manter que o legado ao redor.
+
+## Arquitetura (Clean / camadas)
+
+```
+Handler (HTTP) → Service (caso de uso) → Repository / whatsmeow / storage
+```
+
+| Camada | Faz | Não faz |
+|--------|-----|---------|
+| **Handler** | bind, validação de input, status, Swagger | regra de negócio, SQL, protocolo WA |
+| **Service** | orquestra domínio, invariantes, logging de negócio | `gin.Context`, status HTTP |
+| **Repository** | persistência | HTTP, whatsmeow, webhooks |
+| **Model/DTO** | structs do módulo | lógica pesada |
+
+DIP: handler → **interface** de service → **interface** de repo/adapters.
+
+## SOLID aqui
+
+| | Prática |
+|--|---------|
+| **S** | Um motivo para mudar por tipo/arquivo; domínio em `pkg/chat`, `pkg/group`, … |
+| **O** | Estender com novas funções/arquivos; evitar “mais um if” no centro de um god service |
+| **L** | Implementação honra o contrato da interface |
+| **I** | Interfaces pequenas (`ChatService`, não `EverythingService`) |
+| **D** | Depender de `WhatsmeowService` / repos, não de concretos |
+
+## Design patterns úteis
+
+- **Repository** · **DI** (`New...`) · **Facade** (whatsmeow) · **Adapter/Strategy** (events, MinIO) · **Middleware** · **DTO** (`BodyStruct`)
+
+Não forçar Factory/Singleton/Observer sem necessidade.
+
+## Clean Code
+
+- Nomes com intenção; early return; funções curtas
+- Extrair duplicação de bind/validate nos handlers do **mesmo** domínio
+- Logs via logger do projeto, com `instanceId` quando existir
+- Preferir composição a structs “faz-tudo”
+
+## Refactor seguro ao tocar legado grande
+
+1. Em contribuições ao upstream: **cirúrgico** — só o caminho da tarefa (`fork-community-scope`).
+2. Prefactor útil à feature → PR `refactor:` **antes**, não no mesmo PR da feature (prática Kubernetes).
+3. Extrair no mesmo package sem expandir API pública sem motivo.
+4. `make fmt` / `make lint` / testes **do pacote tocado**, sem reformatar o monorepo.
+
+Referência de anti-patterns (código novo): `maintainability-modern-go`.

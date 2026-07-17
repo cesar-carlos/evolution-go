@@ -1,0 +1,51 @@
+---
+description: Fonte da verdade da documentação — wiki vs Swagger vs código; o que está desatualizado
+globs: docs/**/*, README.md, CHANGELOG.md, VERSION, .env.example, COMMANDS.md
+alwaysApply: false
+---
+
+# Documentação — fonte da verdade
+
+## Prioridade (quando divergirem)
+
+1. **Código** — `pkg/routes`, handlers, `go.mod`, `VERSION`
+2. **Swagger gerado** — `docs/docs.go`, `docs/swagger.json`, `docs/swagger.yaml` (`make swagger`)
+3. **Env** — `.env.example` **na raiz** (mais atual que `docker/examples/.env.example`)
+4. **Cursor rules** — `.cursor/rules/*` (disciplina local do fork)
+5. **Wiki / README** — narrativa; podem estar atrasados
+
+Não editar Swagger gerado à mão. Não inventar arquivos que a wiki/README linkam e não existem.
+
+## Mapa da wiki (`docs/wiki`)
+
+| Pasta | Uso |
+|-------|-----|
+| `fundamentos/` | intro, install, config, quickstart |
+| `conceitos-core/` | arquitetura, instâncias, auth, dual DB |
+| `guias-api/` | endpoints por domínio + `passkey-pairing.md` |
+| `recursos-avancados/` | eventos, mídia, QR, multi-device |
+| `deploy-producao/` | Docker, security |
+| `desenvolvimento/` | setup, contributing, debugging |
+| `referencia/` | API rápida, env, erros, FAQ |
+
+## Desatualizado (não repetir em código/PRs)
+
+| Onde | Problema | Usar em vez disso |
+|------|----------|-------------------|
+| Wiki / exemplos | Porta **4000** | `SERVER_PORT` (`.env.example` **8080**, compose default **8081**) |
+| Wiki README | Versão docs **1.0.0** | arquivo `VERSION` |
+| Wiki | Go “1.24+” | `go.mod` |
+| Wiki / contributing | `git.evoai.app`, `git.evochat.com` | `github.com/evolution-foundation/evolution-go` |
+| Wiki | `make build-local` | `make build` (ou `make check`) |
+| Wiki | `tools/passkey-helper` | `passkey-helper/` |
+| Wiki | links `api-webhooks.md`, `api-users.md`, `webhooks.md`… | arquivos reais (`api-user.md`, `events-system.md`, …) |
+| **README raiz** | links `CONTRIBUTING.md` / `SECURITY.md` **inexistentes** | wiki `desenvolvimento/contributing.md` + email segurança |
+| Swagger defs | ainda `EvolutionAPI` em nomes gerados | módulo real `evolution-foundation` (só regenerar via `make swagger`) |
+
+## Ao alterar API ou env
+
+- Anotações Swagger + `make swagger`
+- Novas vars → `.env.example` na raiz
+- Idealmente o guia em `docs/wiki/guias-api/` correspondente
+- Passkey/licença: `passkey-pairing.md` + comentários do `.env.example`
+- Corrigir wiki/README só no **escopo** da mudança (ou PR `docs:` separado) — ver `fork-community-scope`
