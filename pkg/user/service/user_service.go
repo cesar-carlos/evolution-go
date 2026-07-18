@@ -17,10 +17,24 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 )
 
+// avatarRequestTimeout bounds POST /user/avatar so clients (e.g. Chatwoot at 12s)
+// get a clear HTTP error instead of a hung connection waiting for the ~75s IQ default.
+const avatarRequestTimeout = 8 * time.Second
+
+// clientReadyWait is the max time to wait after StartInstance before failing.
+const clientReadyWait = 2 * time.Second
+
+// userInfoRequestTimeout bounds the usync IQ on POST /user/info.
+const userInfoRequestTimeout = 10 * time.Second
+
+// pictureURLEnrichBudget is the total wall-clock budget for best-effort PictureURL
+// enrichment after usync (shared across all users in the response).
+const pictureURLEnrichBudget = 5 * time.Second
+
 type UserService interface {
-	GetUser(data *CheckUserStruct, instance *instance_model.Instance) (*UserCollection, error)
+	GetUser(ctx context.Context, data *CheckUserStruct, instance *instance_model.Instance) (*UserCollection, error)
 	CheckUser(data *CheckUserStruct, instance *instance_model.Instance) (*CheckUserCollection, error)
-	GetAvatar(data *GetAvatarStruct, instance *instance_model.Instance) (*types.ProfilePictureInfo, error)
+	GetAvatar(ctx context.Context, data *GetAvatarStruct, instance *instance_model.Instance) (*types.ProfilePictureInfo, error)
 	GetContacts(instance *instance_model.Instance) ([]ContactInfo, error)
 	GetPrivacy(instance *instance_model.Instance) (types.PrivacySettings, error)
 	SetPrivacy(data *PrivacyStruct, instance *instance_model.Instance) (*types.PrivacySettings, error)
@@ -110,6 +124,14 @@ type PrivacyStruct struct {
 }
 
 func (u *userService) ensureClientConnected(instanceId string) (*whatsmeow.Client, error) {
+	return u.ensureClientConnectedCtx(context.Background(), instanceId)
+}
+
+func (u *userService) ensureClientConnectedCtx(ctx context.Context, instanceId string) (*whatsmeow.Client, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	client := u.clientPointer[instanceId]
 	u.loggerWrapper.GetLogger(instanceId).LogInfo("[%s] Checking client connection status - Client exists: %v", instanceId, client != nil)
 
@@ -121,20 +143,10 @@ func (u *userService) ensureClientConnected(instanceId string) (*whatsmeow.Clien
 			return nil, errors.New("no active session found")
 		}
 
-		u.loggerWrapper.GetLogger(instanceId).LogInfo("[%s] Instance started, waiting 2 seconds...", instanceId)
-		time.Sleep(2 * time.Second)
-
-		client = u.clientPointer[instanceId]
-		u.loggerWrapper.GetLogger(instanceId).LogInfo("[%s] Checking new client - Exists: %v, Connected: %v",
-			instanceId,
-			client != nil,
-			client != nil && client.IsConnected())
-
-		if client == nil || !client.IsConnected() {
-			u.loggerWrapper.GetLogger(instanceId).LogError("[%s] New client validation failed - Exists: %v, Connected: %v",
-				instanceId,
-				client != nil,
-				client != nil && client.IsConnected())
+		u.loggerWrapper.GetLogger(instanceId).LogInfo("[%s] Instance started, waiting up to %s for connection...", instanceId, clientReadyWait)
+		client, err = u.waitForClientReady(ctx, instanceId, clientReadyWait)
+		if err != nil {
+			u.loggerWrapper.GetLogger(instanceId).LogError("[%s] New client validation failed: %v", instanceId, err)
 			return nil, errors.New("no active session found")
 		}
 	} else if !client.IsConnected() {
@@ -148,8 +160,33 @@ func (u *userService) ensureClientConnected(instanceId string) (*whatsmeow.Clien
 	return client, nil
 }
 
-func (u *userService) GetUser(data *CheckUserStruct, instance *instance_model.Instance) (*UserCollection, error) {
-	client, err := u.ensureClientConnected(instance.Id)
+func (u *userService) waitForClientReady(ctx context.Context, instanceId string, maxWait time.Duration) (*whatsmeow.Client, error) {
+	deadline := time.Now().Add(maxWait)
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		client := u.clientPointer[instanceId]
+		if client != nil && client.IsConnected() {
+			return client, nil
+		}
+		if time.Now().After(deadline) {
+			return nil, errors.New("client not ready within wait window")
+		}
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("waiting for client: %w", ctx.Err())
+		case <-ticker.C:
+		}
+	}
+}
+
+func (u *userService) GetUser(ctx context.Context, data *CheckUserStruct, instance *instance_model.Instance) (*UserCollection, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	client, err := u.ensureClientConnectedCtx(ctx, instance.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -160,10 +197,20 @@ func (u *userService) GetUser(data *CheckUserStruct, instance *instance_model.In
 		if !ok {
 			return nil, errors.New("invalid phone number")
 		}
-		// usync IQ also requires a digits-only user JID (no "+" prefix).
-		jids = append(jids, utils.CanonicalJID(jid).ToNonAD())
+		jid = utils.CanonicalJID(jid).ToNonAD()
+		// Usync is more reliable on PN JIDs; resolve @lid via store when possible.
+		if jid.Server == types.HiddenUserServer && client.Store.LIDs != nil {
+			if pn, lidErr := client.Store.LIDs.GetPNForLID(ctx, jid); lidErr == nil && !pn.IsEmpty() {
+				u.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Resolved LID %s to PN %s for usync", instance.Id, jid, pn)
+				jid = utils.CanonicalJID(pn).ToNonAD()
+			}
+		}
+		jids = append(jids, jid)
 	}
-	resp, err := client.GetUserInfo(context.Background(), jids)
+
+	usyncCtx, cancel := context.WithTimeout(ctx, userInfoRequestTimeout)
+	defer cancel()
+	resp, err := client.GetUserInfo(usyncCtx, jids)
 	if err != nil {
 		return nil, err
 	}
@@ -171,22 +218,37 @@ func (u *userService) GetUser(data *CheckUserStruct, instance *instance_model.In
 	uc := new(UserCollection)
 	uc.Users = make(map[types.JID]UserInfo)
 
+	enrichDeadline := time.Now().Add(pictureURLEnrichBudget)
+	skipPictureEnrich := false
+
 	for jid, whatsmeowInfo := range resp {
 		// Consultar LID Store para obter LID associado ao JID
 		var lidStr *string
 		if client.Store.LIDs != nil {
-			if lid, err := client.Store.LIDs.GetLIDForPN(context.TODO(), jid); err == nil && !lid.IsEmpty() {
+			if lid, err := client.Store.LIDs.GetLIDForPN(ctx, jid); err == nil && !lid.IsEmpty() {
 				lidString := fmt.Sprintf("%v", lid)
 				lidStr = &lidString
 			}
 		}
 
 		pictureURL := ""
-		pic, picErr := u.fetchProfilePicture(client, jid, true, 25*time.Second)
-		if picErr != nil {
-			u.loggerWrapper.GetLogger(instance.Id).LogWarn("[%s] Failed to enrich PictureURL for %s: %v", instance.Id, jid, picErr)
-		} else if pic != nil {
-			pictureURL = pic.URL
+		if !skipPictureEnrich && whatsmeowInfo.PictureID != "" {
+			remaining := time.Until(enrichDeadline)
+			if remaining <= 0 {
+				skipPictureEnrich = true
+				u.loggerWrapper.GetLogger(instance.Id).LogWarn("[%s] PictureURL enrich budget exhausted; skipping remaining users", instance.Id)
+			} else {
+				pic, picErr := u.fetchProfilePicture(ctx, client, jid, true, remaining)
+				if picErr != nil {
+					u.loggerWrapper.GetLogger(instance.Id).LogWarn("[%s] Failed to enrich PictureURL for %s: %v", instance.Id, jid, picErr)
+					if errors.Is(picErr, whatsmeow.ErrIQRateOverLimit) {
+						skipPictureEnrich = true
+						u.loggerWrapper.GetLogger(instance.Id).LogWarn("[%s] Stopping PictureURL enrich after rate-overlimit", instance.Id)
+					}
+				} else if pic != nil {
+					pictureURL = pic.URL
+				}
+			}
 		}
 
 		// Converter para nossa estrutura UserInfo que inclui LID
@@ -329,9 +391,12 @@ func (u *userService) mergeCheckUserResults(original, retry *CheckUserCollection
 // fetchProfilePicture requests a profile picture URL for jid.
 // Never pass ExistingID here: when the picture is unchanged whatsmeow returns
 // nil with no error and no URL.
-func (u *userService) fetchProfilePicture(client *whatsmeow.Client, jid types.JID, preview bool, timeout time.Duration) (*types.ProfilePictureInfo, error) {
+func (u *userService) fetchProfilePicture(parent context.Context, client *whatsmeow.Client, jid types.JID, preview bool, timeout time.Duration) (*types.ProfilePictureInfo, error) {
 	jid = utils.CanonicalJID(jid).ToNonAD()
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	if parent == nil {
+		parent = context.Background()
+	}
+	ctx, cancel := context.WithTimeout(parent, timeout)
 	defer cancel()
 
 	pic, err := client.GetProfilePictureInfo(ctx, jid, &whatsmeow.GetProfilePictureParams{
@@ -343,8 +408,12 @@ func (u *userService) fetchProfilePicture(client *whatsmeow.Client, jid types.JI
 	return pic, nil
 }
 
-func (u *userService) GetAvatar(data *GetAvatarStruct, instance *instance_model.Instance) (*types.ProfilePictureInfo, error) {
-	client, err := u.ensureClientConnected(instance.Id)
+func (u *userService) GetAvatar(ctx context.Context, data *GetAvatarStruct, instance *instance_model.Instance) (*types.ProfilePictureInfo, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	client, err := u.ensureClientConnectedCtx(ctx, instance.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -367,11 +436,18 @@ func (u *userService) GetAvatar(data *GetAvatarStruct, instance *instance_model.
 	// prefix "+" which WhatsApp does not accept on this path — same class of
 	// bug as typing/receipts (see utils.CanonicalJID).
 	jid = utils.CanonicalJID(jid).ToNonAD()
+	// Prefer PN JID when the store knows the mapping for @lid.
+	if jid.Server == types.HiddenUserServer && client.Store.LIDs != nil {
+		if pn, lidErr := client.Store.LIDs.GetPNForLID(ctx, jid); lidErr == nil && !pn.IsEmpty() {
+			u.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Resolved LID %s to PN %s for avatar", instance.Id, jid, pn)
+			jid = utils.CanonicalJID(pn).ToNonAD()
+		}
+	}
 
 	u.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Requesting avatar for JID: %s, Preview: %v", instance.Id, jid, data.Preview)
 	u.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Starting GetProfilePictureInfo request...", instance.Id)
 
-	pic, err := u.fetchProfilePicture(client, jid, data.Preview, 80*time.Second)
+	pic, err := u.fetchProfilePicture(ctx, client, jid, data.Preview, avatarRequestTimeout)
 	if err != nil {
 		u.loggerWrapper.GetLogger(instance.Id).LogError("[%s] GetProfilePictureInfo failed: %v", instance.Id, err)
 		return nil, err
