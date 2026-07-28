@@ -1,4 +1,5 @@
 .env
+scripts/internal-e2e/.env
 logs/*
 build/
 *.prof
