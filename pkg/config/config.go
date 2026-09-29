@@ -231,9 +231,9 @@ func Load() *Config {
 
 	clientName := os.Getenv(config_env.CLIENT_NAME)
 
+	// Documented names (WADEBUG / LOGTYPE). LOG_TYPE is a legacy alias.
 	waDebug := os.Getenv(config_env.WA_DEBUG)
-
-	logType := os.Getenv(config_env.LOGTYPE)
+	logType := getenvFirst(config_env.LOGTYPE, "LOG_TYPE")
 
 	webhookFiles := os.Getenv(config_env.WEBHOOKFILES)
 	if webhookFiles == "" {
@@ -419,6 +419,15 @@ func loadMinioConfig(config *Config) {
 	config.MinioBucket = minioBucket
 	config.MinioUseSSL = minioUseSSL
 	config.MinioRegion = minioRegion
+}
+
+func getenvFirst(keys ...string) string {
+	for _, key := range keys {
+		if v := os.Getenv(key); v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 func panicIfEmpty(key, value string) {

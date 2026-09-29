@@ -72,7 +72,9 @@ func (lm *LoggerManager) GetLogger(instanceId string) *Logger {
 func newLogger(instanceId string, config *config.Config) *Logger {
 	// Garante que o diretório existe
 	logPath := filepath.Join(config.LogDirectory, instanceId)
-	os.MkdirAll(logPath, 0755)
+	if err := os.MkdirAll(logPath, 0755); err != nil {
+		logger.LogError("Falha ao criar diretório de logs: %v", err)
+	}
 
 	logFile := filepath.Join(logPath, "instance.log")
 
@@ -93,44 +95,42 @@ func newLogger(instanceId string, config *config.Config) *Logger {
 
 func (l *Logger) LogInfo(format string, args ...interface{}) {
 	l.log("INFO", format, args...)
-	logger.LogInfo(format, args...)
 }
 
 func (l *Logger) LogError(format string, args ...interface{}) {
-	l.log("ERROR", format, args...)
-	logger.LogError(format, args...)
+	logger.LogError("%s", l.log("ERROR", format, args...))
 }
 
 func (l *Logger) LogWarn(format string, args ...interface{}) {
-	l.log("WARN", format, args...)
-	logger.LogWarn(format, args...)
+	logger.LogWarn("%s", l.log("WARN", format, args...))
 }
 
 func (l *Logger) LogDebug(format string, args ...interface{}) {
 	l.log("DEBUG", format, args...)
-	logger.LogDebug(format, args...)
 }
 
-func (l *Logger) log(level string, format string, args ...interface{}) {
+func (l *Logger) log(level string, format string, args ...interface{}) string {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
+	message := MaskSensitive(fmt.Sprintf(format, args...))
 	entry := LogEntry{
 		Timestamp:  time.Now(),
 		Level:      level,
 		InstanceId: l.instanceId,
-		Message:    fmt.Sprintf(format, args...),
+		Message:    message,
 	}
 
 	jsonEntry, err := json.Marshal(entry)
 	if err != nil {
 		logger.LogError("Failed to marshal log entry: %v", err)
-		return
+		return message
 	}
 
 	if _, err := l.writer.Write(append(jsonEntry, '\n')); err != nil {
 		logger.LogError("Failed to write log: %v", err)
 	}
+	return message
 }
 
 func (l *Logger) Close() error {

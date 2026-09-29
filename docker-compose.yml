@@ -1,5 +1,16 @@
+# cspell:ignore evoapicloud evogo dbdata sslmode wget
+
+# Size cap only (json-file has no MaxAge). 100m x 5 ~= 500MB.
+x-default-logging: &default-logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "100m"
+      max-file: "5"
+
 services:
   evolution-go:
+    <<: *default-logging
     image: evoapicloud/evolution-go:latest
     container_name: evolution-go
     restart: unless-stopped
@@ -27,6 +38,7 @@ services:
       start_period: 40s
 
   postgres:
+    <<: *default-logging
     image: postgres:15-alpine
     container_name: evolution-go-postgres
     restart: unless-stopped

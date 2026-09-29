@@ -2,7 +2,6 @@ package rabbitmq_producer
 
 import (
 	"fmt"
-	"net/url"
 	"strings"
 	"time"
 
@@ -48,20 +47,7 @@ func (p *rabbitMQProducer) maskConnectionString(connStr string) string {
 	if connStr == "" {
 		return "empty"
 	}
-
-	parsedURL, err := url.Parse(connStr)
-	if err != nil {
-		return "invalid-url"
-	}
-
-	// Mask password if present
-	if parsedURL.User != nil {
-		if _, hasPassword := parsedURL.User.Password(); hasPassword {
-			parsedURL.User = url.UserPassword(parsedURL.User.Username(), "***")
-		}
-	}
-
-	return parsedURL.String()
+	return logger_wrapper.MaskSensitive(connStr)
 }
 
 // handleConnectionClose monitors connection close events and logs them
