@@ -6,108 +6,66 @@ import (
 )
 
 // participantMentionJID prefers the phone-number JID when available.
-// Mentions require @s.whatsapp.net; participant.JID may be @lid.
+// Some participants expose only a LID. Retain that identifier as a fallback;
+// converting its user to a phone-number JID would invent a different identity.
 func participantMentionJID(p types.GroupParticipant) string {
 	if !p.PhoneNumber.IsEmpty() {
 		return p.PhoneNumber.String()
 	}
+	if p.JID.IsEmpty() {
+		return ""
+	}
 	return p.JID.String()
 }
 
-// setMessageMentionedJIDs writes ContextInfo.MentionedJID for the given message type.
-// DocumentMessage may live under DocumentWithCaptionMessage when a caption is set.
-func setMessageMentionedJIDs(msg *waE2E.Message, messageType string, mentionedJIDs []string) {
-	if msg == nil || len(mentionedJIDs) == 0 {
-		return
+// setMessageMentionedJIDs preserves other ContextInfo fields and reports whether
+// mentions were applied. Inspect the payload instead of a separate type label:
+// captioned documents, buttons and lists can live inside the same wrapper.
+func setMessageMentionedJIDs(msg *waE2E.Message, mentionedJIDs []string) bool {
+	if len(mentionedJIDs) == 0 {
+		return false
+	}
+	for msg != nil && msg.DocumentWithCaptionMessage != nil {
+		msg = msg.DocumentWithCaptionMessage.Message
+	}
+	if msg == nil {
+		return false
 	}
 
-	switch messageType {
-	case "ExtendedTextMessage":
-		if msg.ExtendedTextMessage == nil {
-			return
-		}
-		if msg.ExtendedTextMessage.ContextInfo == nil {
-			msg.ExtendedTextMessage.ContextInfo = &waE2E.ContextInfo{}
-		}
-		msg.ExtendedTextMessage.ContextInfo.MentionedJID = mentionedJIDs
-	case "ImageMessage":
-		if msg.ImageMessage == nil {
-			return
-		}
-		if msg.ImageMessage.ContextInfo == nil {
-			msg.ImageMessage.ContextInfo = &waE2E.ContextInfo{}
-		}
-		msg.ImageMessage.ContextInfo.MentionedJID = mentionedJIDs
-	case "VideoMessage":
-		if msg.VideoMessage == nil {
-			return
-		}
-		if msg.VideoMessage.ContextInfo == nil {
-			msg.VideoMessage.ContextInfo = &waE2E.ContextInfo{}
-		}
-		msg.VideoMessage.ContextInfo.MentionedJID = mentionedJIDs
-	case "PtvMessage":
-		if msg.PtvMessage == nil {
-			return
-		}
-		if msg.PtvMessage.ContextInfo == nil {
-			msg.PtvMessage.ContextInfo = &waE2E.ContextInfo{}
-		}
-		msg.PtvMessage.ContextInfo.MentionedJID = mentionedJIDs
-	case "AudioMessage":
-		if msg.AudioMessage == nil {
-			return
-		}
-		if msg.AudioMessage.ContextInfo == nil {
-			msg.AudioMessage.ContextInfo = &waE2E.ContextInfo{}
-		}
-		msg.AudioMessage.ContextInfo.MentionedJID = mentionedJIDs
-	case "DocumentMessage":
-		if msg.DocumentMessage != nil {
-			if msg.DocumentMessage.ContextInfo == nil {
-				msg.DocumentMessage.ContextInfo = &waE2E.ContextInfo{}
-			}
-			msg.DocumentMessage.ContextInfo.MentionedJID = mentionedJIDs
-		} else if msg.DocumentWithCaptionMessage != nil &&
-			msg.DocumentWithCaptionMessage.Message != nil &&
-			msg.DocumentWithCaptionMessage.Message.DocumentMessage != nil {
-			doc := msg.DocumentWithCaptionMessage.Message.DocumentMessage
-			if doc.ContextInfo == nil {
-				doc.ContextInfo = &waE2E.ContextInfo{}
-			}
-			doc.ContextInfo.MentionedJID = mentionedJIDs
-		}
-	case "PollCreationMessage":
-		if msg.PollCreationMessage == nil {
-			return
-		}
-		if msg.PollCreationMessage.ContextInfo == nil {
-			msg.PollCreationMessage.ContextInfo = &waE2E.ContextInfo{}
-		}
-		msg.PollCreationMessage.ContextInfo.MentionedJID = mentionedJIDs
-	case "StickerMessage":
-		if msg.StickerMessage == nil {
-			return
-		}
-		if msg.StickerMessage.ContextInfo == nil {
-			msg.StickerMessage.ContextInfo = &waE2E.ContextInfo{}
-		}
-		msg.StickerMessage.ContextInfo.MentionedJID = mentionedJIDs
-	case "LocationMessage":
-		if msg.LocationMessage == nil {
-			return
-		}
-		if msg.LocationMessage.ContextInfo == nil {
-			msg.LocationMessage.ContextInfo = &waE2E.ContextInfo{}
-		}
-		msg.LocationMessage.ContextInfo.MentionedJID = mentionedJIDs
-	case "ContactMessage":
-		if msg.ContactMessage == nil {
-			return
-		}
-		if msg.ContactMessage.ContextInfo == nil {
-			msg.ContactMessage.ContextInfo = &waE2E.ContextInfo{}
-		}
-		msg.ContactMessage.ContextInfo.MentionedJID = mentionedJIDs
+	var contextInfo **waE2E.ContextInfo
+	switch {
+	case msg.ExtendedTextMessage != nil:
+		contextInfo = &msg.ExtendedTextMessage.ContextInfo
+	case msg.ImageMessage != nil:
+		contextInfo = &msg.ImageMessage.ContextInfo
+	case msg.VideoMessage != nil:
+		contextInfo = &msg.VideoMessage.ContextInfo
+	case msg.PtvMessage != nil:
+		contextInfo = &msg.PtvMessage.ContextInfo
+	case msg.AudioMessage != nil:
+		contextInfo = &msg.AudioMessage.ContextInfo
+	case msg.DocumentMessage != nil:
+		contextInfo = &msg.DocumentMessage.ContextInfo
+	case msg.PollCreationMessage != nil:
+		contextInfo = &msg.PollCreationMessage.ContextInfo
+	case msg.StickerMessage != nil:
+		contextInfo = &msg.StickerMessage.ContextInfo
+	case msg.LocationMessage != nil:
+		contextInfo = &msg.LocationMessage.ContextInfo
+	case msg.ContactMessage != nil:
+		contextInfo = &msg.ContactMessage.ContextInfo
+	case msg.InteractiveMessage != nil:
+		contextInfo = &msg.InteractiveMessage.ContextInfo
+	case msg.ButtonsMessage != nil:
+		contextInfo = &msg.ButtonsMessage.ContextInfo
+	case msg.ListMessage != nil:
+		contextInfo = &msg.ListMessage.ContextInfo
+	default:
+		return false
 	}
+	if *contextInfo == nil {
+		*contextInfo = &waE2E.ContextInfo{}
+	}
+	(*contextInfo).MentionedJID = mentionedJIDs
+	return true
 }
