@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	instance_model "github.com/evolution-foundation/evolution-go/pkg/instance/model"
 	logger_wrapper "github.com/evolution-foundation/evolution-go/pkg/logger"
@@ -16,20 +15,6 @@ import (
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 )
-
-// avatarRequestTimeout bounds POST /user/avatar so clients (e.g. Chatwoot at 12s)
-// get a clear HTTP error instead of a hung connection waiting for the ~75s IQ default.
-const avatarRequestTimeout = 8 * time.Second
-
-// clientReadyWait is the max time to wait after StartInstance before failing.
-const clientReadyWait = 2 * time.Second
-
-// userInfoRequestTimeout bounds the usync IQ on POST /user/info.
-const userInfoRequestTimeout = 10 * time.Second
-
-// pictureURLEnrichBudget is the total wall-clock budget for best-effort PictureURL
-// enrichment after usync (shared across all users in the response).
-const pictureURLEnrichBudget = 5 * time.Second
 
 type UserService interface {
 	GetUser(ctx context.Context, data *CheckUserStruct, instance *instance_model.Instance) (*UserCollection, error)
@@ -62,16 +47,17 @@ type ContactInfo struct {
 }
 
 type UserInfo struct {
-	VerifiedName *types.VerifiedName
-	Status       string
-	PictureID    string
-	PictureURL   string
-	Devices      []types.JID
-	LID          *string // The local ID (if available)
+	VerifiedName *types.VerifiedName `json:"VerifiedName"`
+	Status       string              `json:"Status"`
+	PictureID    string              `json:"PictureID"`
+	// PictureURL is a best-effort preview URL, empty when unavailable.
+	PictureURL string      `json:"PictureURL"`
+	Devices    []types.JID `json:"Devices" swaggertype:"array,string"`
+	LID        *string     `json:"LID"` // The local ID (if available)
 }
 
 type UserCollection struct {
-	Users map[types.JID]UserInfo
+	Users map[types.JID]UserInfo `json:"Users"`
 }
 
 type User struct {
@@ -125,145 +111,6 @@ type PrivacyStruct struct {
 
 func (u *userService) ensureClientConnected(instanceId string) (*whatsmeow.Client, error) {
 	return u.ensureClientConnectedCtx(context.Background(), instanceId)
-}
-
-func (u *userService) ensureClientConnectedCtx(ctx context.Context, instanceId string) (*whatsmeow.Client, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	client := u.clientPointer[instanceId]
-	u.loggerWrapper.GetLogger(instanceId).LogInfo("[%s] Checking client connection status - Client exists: %v", instanceId, client != nil)
-
-	if client == nil {
-		u.loggerWrapper.GetLogger(instanceId).LogInfo("[%s] No client found, attempting to start new instance", instanceId)
-		err := u.whatsmeowService.StartInstance(instanceId)
-		if err != nil {
-			u.loggerWrapper.GetLogger(instanceId).LogError("[%s] Failed to start instance: %v", instanceId, err)
-			return nil, errors.New("no active session found")
-		}
-
-		u.loggerWrapper.GetLogger(instanceId).LogInfo("[%s] Instance started, waiting up to %s for connection...", instanceId, clientReadyWait)
-		client, err = u.waitForClientReady(ctx, instanceId, clientReadyWait)
-		if err != nil {
-			u.loggerWrapper.GetLogger(instanceId).LogError("[%s] New client validation failed: %v", instanceId, err)
-			return nil, errors.New("no active session found")
-		}
-	} else if !client.IsConnected() {
-		u.loggerWrapper.GetLogger(instanceId).LogError("[%s] Existing client is disconnected - Connected status: %v",
-			instanceId,
-			client.IsConnected())
-		return nil, errors.New("client disconnected")
-	}
-
-	u.loggerWrapper.GetLogger(instanceId).LogInfo("[%s] Client successfully validated - Connected: %v", instanceId, client.IsConnected())
-	return client, nil
-}
-
-func (u *userService) waitForClientReady(ctx context.Context, instanceId string, maxWait time.Duration) (*whatsmeow.Client, error) {
-	deadline := time.Now().Add(maxWait)
-	ticker := time.NewTicker(100 * time.Millisecond)
-	defer ticker.Stop()
-
-	for {
-		client := u.clientPointer[instanceId]
-		if client != nil && client.IsConnected() {
-			return client, nil
-		}
-		if time.Now().After(deadline) {
-			return nil, errors.New("client not ready within wait window")
-		}
-		select {
-		case <-ctx.Done():
-			return nil, fmt.Errorf("waiting for client: %w", ctx.Err())
-		case <-ticker.C:
-		}
-	}
-}
-
-func (u *userService) GetUser(ctx context.Context, data *CheckUserStruct, instance *instance_model.Instance) (*UserCollection, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	client, err := u.ensureClientConnectedCtx(ctx, instance.Id)
-	if err != nil {
-		return nil, err
-	}
-
-	var jids []types.JID
-	for _, arg := range data.Number {
-		jid, ok := utils.ParseJID(arg)
-		if !ok {
-			return nil, errors.New("invalid phone number")
-		}
-		jid = utils.CanonicalJID(jid).ToNonAD()
-		// Usync is more reliable on PN JIDs; resolve @lid via store when possible.
-		if jid.Server == types.HiddenUserServer && client.Store.LIDs != nil {
-			if pn, lidErr := client.Store.LIDs.GetPNForLID(ctx, jid); lidErr == nil && !pn.IsEmpty() {
-				u.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Resolved LID %s to PN %s for usync", instance.Id, jid, pn)
-				jid = utils.CanonicalJID(pn).ToNonAD()
-			}
-		}
-		jids = append(jids, jid)
-	}
-
-	usyncCtx, cancel := context.WithTimeout(ctx, userInfoRequestTimeout)
-	defer cancel()
-	resp, err := client.GetUserInfo(usyncCtx, jids)
-	if err != nil {
-		return nil, err
-	}
-
-	uc := new(UserCollection)
-	uc.Users = make(map[types.JID]UserInfo)
-
-	enrichDeadline := time.Now().Add(pictureURLEnrichBudget)
-	skipPictureEnrich := false
-
-	for jid, whatsmeowInfo := range resp {
-		// Consultar LID Store para obter LID associado ao JID
-		var lidStr *string
-		if client.Store.LIDs != nil {
-			if lid, err := client.Store.LIDs.GetLIDForPN(ctx, jid); err == nil && !lid.IsEmpty() {
-				lidString := fmt.Sprintf("%v", lid)
-				lidStr = &lidString
-			}
-		}
-
-		pictureURL := ""
-		if !skipPictureEnrich && whatsmeowInfo.PictureID != "" {
-			remaining := time.Until(enrichDeadline)
-			if remaining <= 0 {
-				skipPictureEnrich = true
-				u.loggerWrapper.GetLogger(instance.Id).LogWarn("[%s] PictureURL enrich budget exhausted; skipping remaining users", instance.Id)
-			} else {
-				pic, picErr := u.fetchProfilePicture(ctx, client, jid, true, remaining)
-				if picErr != nil {
-					u.loggerWrapper.GetLogger(instance.Id).LogWarn("[%s] Failed to enrich PictureURL for %s: %v", instance.Id, jid, picErr)
-					if errors.Is(picErr, whatsmeow.ErrIQRateOverLimit) {
-						skipPictureEnrich = true
-						u.loggerWrapper.GetLogger(instance.Id).LogWarn("[%s] Stopping PictureURL enrich after rate-overlimit", instance.Id)
-					}
-				} else if pic != nil {
-					pictureURL = pic.URL
-				}
-			}
-		}
-
-		// Converter para nossa estrutura UserInfo que inclui LID
-		info := UserInfo{
-			VerifiedName: whatsmeowInfo.VerifiedName,
-			Status:       whatsmeowInfo.Status,
-			PictureID:    whatsmeowInfo.PictureID,
-			PictureURL:   pictureURL,
-			Devices:      whatsmeowInfo.Devices,
-			LID:          lidStr,
-		}
-		uc.Users[jid] = info
-	}
-
-	return uc, nil
 }
 
 func (u *userService) CheckUser(data *CheckUserStruct, instance *instance_model.Instance) (*CheckUserCollection, error) {
@@ -386,80 +233,6 @@ func (u *userService) mergeCheckUserResults(original, retry *CheckUserCollection
 	}
 
 	return merged
-}
-
-// fetchProfilePicture requests a profile picture URL for jid.
-// Never pass ExistingID here: when the picture is unchanged whatsmeow returns
-// nil with no error and no URL.
-func (u *userService) fetchProfilePicture(parent context.Context, client *whatsmeow.Client, jid types.JID, preview bool, timeout time.Duration) (*types.ProfilePictureInfo, error) {
-	jid = utils.CanonicalJID(jid).ToNonAD()
-	if parent == nil {
-		parent = context.Background()
-	}
-	ctx, cancel := context.WithTimeout(parent, timeout)
-	defer cancel()
-
-	pic, err := client.GetProfilePictureInfo(ctx, jid, &whatsmeow.GetProfilePictureParams{
-		Preview: preview,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("get profile picture for %s: %w", jid, err)
-	}
-	return pic, nil
-}
-
-func (u *userService) GetAvatar(ctx context.Context, data *GetAvatarStruct, instance *instance_model.Instance) (*types.ProfilePictureInfo, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	client, err := u.ensureClientConnectedCtx(ctx, instance.Id)
-	if err != nil {
-		return nil, err
-	}
-
-	// 🔒 FIX: Verificar se o cliente está conectado antes de fazer a requisição
-	if !client.IsConnected() {
-		return nil, errors.New("client is not connected to WhatsApp")
-	}
-
-	// 🔒 FIX: Verificar se o cliente está autenticado
-	if !client.IsLoggedIn() {
-		return nil, errors.New("client is not logged in to WhatsApp")
-	}
-
-	jid, ok := utils.ParseJID(data.Number)
-	if !ok {
-		return nil, errors.New("invalid phone number")
-	}
-	// Profile picture IQ is a RAW node (Target=jid). CreateJID/ParseJID may
-	// prefix "+" which WhatsApp does not accept on this path — same class of
-	// bug as typing/receipts (see utils.CanonicalJID).
-	jid = utils.CanonicalJID(jid).ToNonAD()
-	// Prefer PN JID when the store knows the mapping for @lid.
-	if jid.Server == types.HiddenUserServer && client.Store.LIDs != nil {
-		if pn, lidErr := client.Store.LIDs.GetPNForLID(ctx, jid); lidErr == nil && !pn.IsEmpty() {
-			u.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Resolved LID %s to PN %s for avatar", instance.Id, jid, pn)
-			jid = utils.CanonicalJID(pn).ToNonAD()
-		}
-	}
-
-	u.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Requesting avatar for JID: %s, Preview: %v", instance.Id, jid, data.Preview)
-	u.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Starting GetProfilePictureInfo request...", instance.Id)
-
-	pic, err := u.fetchProfilePicture(ctx, client, jid, data.Preview, avatarRequestTimeout)
-	if err != nil {
-		u.loggerWrapper.GetLogger(instance.Id).LogError("[%s] GetProfilePictureInfo failed: %v", instance.Id, err)
-		return nil, err
-	}
-
-	if pic == nil {
-		return nil, errors.New("no profile picture found")
-	}
-
-	u.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Got avatar %s", instance.Id, pic.URL)
-
-	return pic, nil
 }
 
 func (u *userService) GetContacts(instance *instance_model.Instance) ([]ContactInfo, error) {

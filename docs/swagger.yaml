@@ -915,6 +915,32 @@ definitions:
       image:
         type: string
     type: object
+  github_com_evolution-foundation_evolution-go_pkg_user_service.UserCollection:
+    properties:
+      Users:
+        additionalProperties:
+          $ref: '#/definitions/github_com_evolution-foundation_evolution-go_pkg_user_service.UserInfo'
+        type: object
+    type: object
+  github_com_evolution-foundation_evolution-go_pkg_user_service.UserInfo:
+    properties:
+      Devices:
+        items:
+          type: string
+        type: array
+      LID:
+        description: The local ID (if available)
+        type: string
+      PictureID:
+        type: string
+      PictureURL:
+        description: PictureURL is a best-effort preview URL, empty when unavailable.
+        type: string
+      Status:
+        type: string
+      VerifiedName:
+        $ref: '#/definitions/types.VerifiedName'
+    type: object
   github_com_evolution-foundation_evolution-go_pkg_utils.VCardStruct:
     properties:
       fullName:
@@ -922,6 +948,13 @@ definitions:
       organization:
         type: string
       phone:
+        type: string
+    type: object
+  pkg_user_handler.UserInfoResponse:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_evolution-foundation_evolution-go_pkg_user_service.UserCollection'
+      message:
         type: string
     type: object
   types.AddressingMode:
@@ -9355,7 +9388,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Get a user's avatar
+      description: Get a user's avatar with an eight-second request budget, including
+        session readiness and LID resolution.
       parameters:
       - description: Avatar data
         in: body
@@ -9491,7 +9525,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Get a user
+      description: Query user information with a best-effort preview PictureURL. Photo
+        failures do not fail successful user information.
       parameters:
       - description: User data
         in: body
@@ -9505,7 +9540,7 @@ paths:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/gin.H'
+            $ref: '#/definitions/pkg_user_handler.UserInfoResponse'
         "400":
           description: Error on validation
           schema:

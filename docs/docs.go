@@ -3458,7 +3458,7 @@ const docTemplate = `{
         },
         "/user/avatar": {
             "post": {
-                "description": "Get a user's avatar",
+                "description": "Get a user's avatar with an eight-second request budget, including session readiness and LID resolution.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3666,7 +3666,7 @@ const docTemplate = `{
         },
         "/user/info": {
             "post": {
-                "description": "Get a user",
+                "description": "Query user information with a best-effort preview PictureURL. Photo failures do not fail successful user information.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3692,7 +3692,7 @@ const docTemplate = `{
                     "200": {
                         "description": "success",
                         "schema": {
-                            "$ref": "#/definitions/gin.H"
+                            "$ref": "#/definitions/pkg_user_handler.UserInfoResponse"
                         }
                     },
                     "400": {
@@ -5314,6 +5314,45 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_evolution-foundation_evolution-go_pkg_user_service.UserCollection": {
+            "type": "object",
+            "properties": {
+                "Users": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/github_com_evolution-foundation_evolution-go_pkg_user_service.UserInfo"
+                    }
+                }
+            }
+        },
+        "github_com_evolution-foundation_evolution-go_pkg_user_service.UserInfo": {
+            "type": "object",
+            "properties": {
+                "Devices": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "LID": {
+                    "description": "The local ID (if available)",
+                    "type": "string"
+                },
+                "PictureID": {
+                    "type": "string"
+                },
+                "PictureURL": {
+                    "description": "PictureURL is a best-effort preview URL, empty when unavailable.",
+                    "type": "string"
+                },
+                "Status": {
+                    "type": "string"
+                },
+                "VerifiedName": {
+                    "$ref": "#/definitions/types.VerifiedName"
+                }
+            }
+        },
         "github_com_evolution-foundation_evolution-go_pkg_utils.VCardStruct": {
             "type": "object",
             "properties": {
@@ -5324,6 +5363,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "pkg_user_handler.UserInfoResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/github_com_evolution-foundation_evolution-go_pkg_user_service.UserCollection"
+                },
+                "message": {
                     "type": "string"
                 }
             }
