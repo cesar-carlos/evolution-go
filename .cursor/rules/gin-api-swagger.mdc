@@ -13,6 +13,21 @@ alwaysApply: false
 - **Token da instância** — operações no contexto daquela sessão; middleware resolve `instance` via `ctx.MustGet("instance")`.
 - Em código/docs novas: preferir identificação por token no middleware; evitar exigir `instanceName` em body/query salvo endpoints admin por ID já existentes.
 
+## Isolamento e compatibilidade
+
+- A instância autenticada é a autoridade para operações de instância. Se houver ID
+  no path/body, confirme que pertence a ela; não confiar no identificador enviado.
+- Consultas, atualizações, caches e eventos devem respeitar o escopo da instância.
+  Operações administrativas globais são explícitas e usam autenticação administrativa.
+- Preserve nomes/tipos JSON, status HTTP, defaults e formatos dos eventos. Mudança
+  incompatível precisa ser intencional e documentar migração quando cabível.
+- Atualizações parciais distinguem campo omitido de `false`, zero e vazio. Defina
+  a semântica de `null`; use ponteiros/tipos de presença quando necessário e atualize
+  apenas campos presentes. Não aplique PATCH silenciosamente a um PUT existente
+  cujo contrato seja de substituição completa.
+- Teste tentativa de acesso entre instâncias e preservação de campos omitidos;
+  veja `testing-quality`.
+
 ## Handlers
 
 ```go
@@ -23,7 +38,7 @@ func (c *chatHandler) ChatPin(ctx *gin.Context) {
         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "instance not found"})
         return
     }
-    var data *chat_service.BodyStruct
+    var data chat_service.BodyStruct
     if err := ctx.ShouldBindBodyWithJSON(&data); err != nil {
         ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
         return
@@ -34,6 +49,11 @@ func (c *chatHandler) ChatPin(ctx *gin.Context) {
 
 - Status via `net/http` (`http.StatusBadRequest`, …).
 - Sucesso alinhado ao módulo: frequentemente `{"message":"success","data":...}`.
+- Rejeite entradas inválidas e corpos nulos quando o contrato exigir objeto. Não
+  desreferencie DTO opcional sem validar; não altere a tolerância a campos extras
+  de endpoints existentes sem avaliar compatibilidade.
+- Classifique erros de domínio no handler; preserve a causa internamente e não
+  exponha credenciais, DSNs, tokens ou detalhes internos na resposta.
 
 ## Rotas
 

@@ -1,0 +1,54 @@
+---
+description: Testes de comportamento, regressão, isolamento e verificações da CI
+globs: "**/*.go, .github/workflows/*.yml, scripts/**, Makefile"
+alwaysApply: false
+---
+
+# Testes e qualidade
+
+Use os comandos canônicos de `AGENTS.md`; não replique sequências divergentes.
+
+## O que testar
+
+- Bug: adicione um teste que reproduza a falha anterior quando tecnicamente viável.
+  Verifique a relação com a regressão; não basta executar o caminho feliz.
+- Nova regra de negócio: cubra sucesso, falhas relevantes e limites. Testes de
+  tabela são úteis para variações de entrada, sem obrigação de usar esse formato.
+- Mudança HTTP: verifique autenticação, isolamento entre instâncias, payload e
+  status relevantes; inclua corpo inválido/nulo e campos omitidos quando aplicáveis.
+- Atualização parcial: diferencie omissão, `false`, zero, vazio e `null` segundo o
+  contrato; confirme que outros campos e outras instâncias permanecem intactos.
+- Concorrência: exercite acesso simultâneo, desconexão/cancelamento e encerramento
+  do caminho alterado; rode com `-race`. O detector só observa caminhos executados.
+- Banco/eventos: teste falha parcial, rollback, preservação de campos e política de
+  repetição quando fizerem parte da mudança.
+
+## Como testar
+
+- Teste resultados e contratos observáveis. Evite testes que apenas espelham o
+  algoritmo, verificam getters triviais ou fixam detalhes internos sem necessidade.
+- Prefira fakes pequenos e `httptest` nas fronteiras externas; mocks de SQL são
+  úteis para consultas, mas não substituem integração para semântica real do banco.
+- Unitários devem ser determinísticos: sem WhatsApp real, credenciais, licença,
+  serviços de produção ou acesso externo à rede. Servidores locais de teste são válidos.
+- Use `t.TempDir`, `t.Cleanup` e fechamento explícito de workers/servidores. Não
+  deixe goroutines modificando estado depois do teste; não use sleeps para ordenar eventos.
+- Não use `t.Parallel` com estado global, ambiente ou recursos compartilhados mutáveis.
+- Integrações opcionais devem declarar requisitos e skips. Não esconda uma falha
+  como skip e não imponha percentuais arbitrários de cobertura como prova de qualidade.
+- Documentação e mudanças mecânicas sem comportamento não exigem testes artificiais.
+
+## CI e evidências
+
+- `quality.yml` executa em PRs e é reutilizado pelo workflow de publicação em pushes
+  para `main`. A publicação depende do sucesso da qualidade.
+- A CI verifica formatação dos arquivos Go alterados e executa build, vet, testes
+  e race detector no projeto, com CGO e ferramentas de mídia instalados.
+- Não introduza `continue-on-error` para esconder regressões. Distingua falhas
+  preexistentes de falhas da mudança, registrando evidência sem ampliar o escopo.
+- A suíte `scripts/internal-e2e` é específica do fork e pode enviar mensagens reais.
+  Não executá-la como teste unitário/CI nem incluí-la incidentalmente em PR upstream.
+- Informe comandos, resultados e limitações. A execução local não equivale a um
+  workflow já aprovado no GitHub; proteção de branch é configuração separada.
+
+Referência: [Go Race Detector](https://go.dev/doc/articles/race_detector).

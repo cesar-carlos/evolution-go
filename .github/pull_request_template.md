@@ -14,9 +14,15 @@ Closes #(issue_number)
 - [ ] Performance improvement
 
 ## Testing
-- [ ] Manual testing completed
-- [ ] Functionality verified in development environment
-- [ ] No breaking changes introduced
+<!-- List commands and results. Explain checks not run and any pre-existing failures. -->
+- [ ] Relevant behavior and regression tests passed (or not applicable, explained below)
+- [ ] Formatting checked only for changed Go files; relevant vet/build checks passed
+- [ ] Race detector run for concurrency changes (or limitation explained below)
+- [ ] Instance isolation and partial-update behavior checked where applicable
+
+Commands and results:
+
+Limitations / checks not run:
 
 ## Screenshots (if applicable)
 
@@ -24,6 +30,8 @@ Closes #(issue_number)
 - [ ] My code follows the project's style guidelines
 - [ ] I have performed a self-review of my code
 - [ ] I have tested my changes thoroughly
+- [ ] Public API/event contracts are preserved, or breaking changes and migration are documented
+- [ ] Swagger annotations/generated docs and environment examples are updated where applicable
 - [ ] Any dependent changes have been merged and published
 
 ## Additional Notes

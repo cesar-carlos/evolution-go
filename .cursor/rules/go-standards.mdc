@@ -6,6 +6,9 @@ alwaysApply: false
 
 # Padrões Go (projeto)
 
+Comandos e precedência: `AGENTS.md`. Interfaces: `architecture-solid-clean`.
+Testes: `testing-quality`. Preserve packages e aliases usados pelo módulo vizinho.
+
 ## Pacotes e arquivos
 
 - `pkg/<domínio>/{handler,service,repository,model}` — packages `chat_handler`, `chat_service`, etc.
@@ -18,7 +21,7 @@ alwaysApply: false
 | Tipo | Estilo | Exemplo |
 |------|--------|---------|
 | Locais | camelCase | `instanceName` |
-| Constantes | PascalCase / UPPER_CASE | `MaxRetries` |
+| Constantes novas | MixedCaps / mixedCaps, conforme visibilidade | `MaxRetries`, `maxRetries` |
 | Structs / interfaces | PascalCase | `BodyStruct`, `ChatService` |
 | Impl | não exportada | `chatHandler`, `chatService` |
 | Construtores | `New...` | `NewChatHandler` |
@@ -36,38 +39,71 @@ type chatService struct {
 }
 ```
 
-- Depender de interface; injetar no construtor; **não** criar globais mutáveis novos.
-- Interface no pacote do **consumidor** quando só ele usa (Go idiomático); no provedor quando há vários consumidores (padrão atual do projeto).
+- Injete dependências no construtor; **não** crie globais mutáveis novos.
+- O exemplo ilustra o contrato legado. Para interfaces novas, siga os critérios de
+  necessidade e localização de `architecture-solid-clean`, sem espelhar structs.
 
 ## Erros e context (moderno)
+
+Exemplo ilustrativo; o helper `pin` representa a operação interna do caso de uso:
 
 ```go
 func (s *chatService) ChatPin(ctx context.Context, data *BodyStruct, inst *instance_model.Instance) (string, error) {
     if data.Chat == "" {
         return "", fmt.Errorf("chat is required")
     }
-    // ...
-    return ts, fmt.Errorf("pin chat %s: %w", data.Chat, err)
+    ts, err := s.pin(ctx, data, inst)
+    if err != nil {
+        return "", fmt.Errorf("pin chat %s: %w", data.Chat, err)
+    }
+    return ts, nil
 }
 ```
 
 - Em APIs **novas** (arquivo/função nova): preferir `context.Context` primeiro; na borda HTTP usar `c.Request.Context()`.
-- Ao **estender** service/handler existente: **manter a assinatura/estilo local** (`fork-community-scope`) — não migrar o pacote inteiro para context no mesmo PR.
+- Preserve APIs existentes quando possível. Se uma assinatura impedir correção
+  necessária, ajuste o caminho afetado e consumidores, sem migrar o pacote inteiro.
 - Wrapping com `%w`; `errors.Is` / `As`; sem `panic` em request path.
 - Handler: 400 validação, 4xx/5xx conforme o caso; `gin.H{"error": ...}` alinhado ao módulo.
+- Trate ou propague erros; descarte somente com justificativa. Evite logar o mesmo
+  erro em todas as camadas. Registre na borda responsável pela decisão, sem segredos.
+
+## Contextos e recursos
+
+- Propague o contexto recebido até HTTP, banco e adapters que aceitem contexto;
+  não use `context.Background()` para ignorar cancelamento da requisição.
+- Trabalho que deve sobreviver à requisição precisa de ownership, prazo e
+  encerramento próprios, documentados e controlados pelo serviço.
+- Operações externas precisam de prazo finito adequado. Ao criar contexto
+  cancelável, invoque seu cancelamento quando terminar.
+- Feche corpos de respostas HTTP, arquivos, rows e recursos temporários em todos
+  os caminhos após aquisição. Verifique `rows.Err()` e erros de escrita/fechamento
+  que comprometam o resultado. Evite acumular `defer` em loops longos.
+- Reutilize clientes HTTP e pools. Limite leituras de mídia/payloads externos;
+  não carregue conteúdo sem limite na memória.
 
 ## Concorrência
 
-- Toda goroutine tem fim claro (ctx cancel, `errgroup`, ou owned shutdown).
-- Sem `time.Sleep` para sincronizar I/O em código novo.
-- Não copiar maps/slices compartilhados sem proteção ou ownership explícito.
+- Defina quem cria, modifica e encerra cada goroutine, canal, map e slice compartilhado.
+  Proteja todos os acessos concorrentes relevantes, inclusive leitura e remoção.
+- Não copie structs com mutexes ou estado cuja cópia compartilhe memória mutável
+  inadvertidamente. Um snapshot deve ter semântica de cópia explícita.
+- Evite I/O e callbacks externos enquanto mantém mutex bloqueado; capture o estado
+  necessário e libere o lock antes de uma operação potencialmente demorada.
+- Cada goroutine precisa de condição de término. Shutdown deve cancelar e aguardar
+  os workers que controla. Não reutilize `*gin.Context` fora da requisição.
+- Defina quem fecha canais; remetentes não podem continuar após o fechamento.
+  Sends/receives potencialmente bloqueantes respeitam cancelamento quando aplicável.
+- Limite filas, workers, tentativas e tempo total. Ao atingir capacidade, defina
+  espera limitada, erro ou descarte observável; não crie goroutines ilimitadas.
+- Não use `time.Sleep` como sincronização. Backoff usa espera cancelável; testes
+  coordenam eventos com canais/barreiras e usam deadlines apenas como proteção.
 
 ## Testes e qualidade
 
-```bash
-make fmt && make lint && make test
-make swagger   # se mudou HTTP
-```
+Siga `AGENTS.md` e `testing-quality`. Documente contratos dos símbolos exportados
+e declarações não triviais; comentários internos explicam decisões e restrições.
+Anotações Swagger documentam os handlers HTTP.
 
-- Regras novas: preferir table-driven tests no pacote.
-- Comentários só no “porquê”; Swagger comments nos handlers exportados.
+Referências: [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments),
+[context](https://pkg.go.dev/context).

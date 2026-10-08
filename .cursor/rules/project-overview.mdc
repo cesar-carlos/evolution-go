@@ -42,16 +42,15 @@ passkey-helper/       # extensão browser (não tools/passkey-helper)
 
 1. Preferir padrões do módulo vizinho a inventar estrutura nova.
 2. **Handler → Service → Repository** (nunca o inverso).
-3. Handlers finos; DI via interfaces + `New...`; structs concretas não exportadas.
+3. Handlers finos; dependências injetadas via `New...`; interfaces quando necessárias (`architecture-solid-clean`).
 4. **Fork/comunidade:** escopo mínimo, sem drive-by — `fork-community-scope`.
 5. Código novo: fácil de manter — `maintainability-modern-go` (sem expandir monólitos).
 6. Fonte da verdade: código + Swagger + `.env.example` raiz; wiki é narrativa — `documentation`.
 7. Não commitar `.env`, secrets nem binários sem necessidade.
 8. Segurança: não abrir issue pública — `suporte@evofoundation.com.br`.
 
-## Precedência entre rules (se conflitar)
+## Instruções compartilhadas
 
-1. `fork-community-scope` — escopo e estilo local do arquivo tocado  
-2. Padrões reais do módulo vizinho / código existente  
-3. `architecture-solid-clean` + `maintainability-modern-go` — sobretudo em **código novo** ou PR `refactor:`  
-4. Wiki — só como apoio; se divergir, seguir código
+`AGENTS.md` centraliza precedência, mapa das rules e comandos de validação.
+Correção, isolamento e recursos não cedem a padrões defeituosos do legado.
+Consulte `testing-quality` para regressões e CI; evite duplicar instruções comuns aqui.

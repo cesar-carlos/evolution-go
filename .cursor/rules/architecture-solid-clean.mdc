@@ -5,7 +5,8 @@ alwaysApply: true
 
 # SOLID, Clean Code e Design Patterns
 
-Aplicar de forma **prática e idiomática em Go**. Clareza > abstração prematura. Código novo deve ser mais fácil de manter que o legado ao redor.
+Aplicar de forma **prática e idiomática em Go**. Precedência e validação: `AGENTS.md`.
+Clareza > abstração prematura. Código novo deve ser mais fácil de manter que o legado ao redor.
 
 ## Arquitetura (Clean / camadas)
 
@@ -20,7 +21,20 @@ Handler (HTTP) → Service (caso de uso) → Repository / whatsmeow / storage
 | **Repository** | persistência | HTTP, whatsmeow, webhooks |
 | **Model/DTO** | structs do módulo | lógica pesada |
 
-DIP: handler → **interface** de service → **interface** de repo/adapters.
+Injete dependências pelo construtor. Tipos concretos são válidos quando não há
+necessidade de substituição, isolamento de dependências ou múltiplas implementações.
+
+## Interfaces e contratos
+
+- Defina interfaces pequenas a partir das operações usadas pelo consumidor;
+  prefira declará-las no pacote consumidor. Vários consumidores, por si só, não
+  justificam uma interface ampla no provedor.
+- Não crie interfaces apenas para espelhar structs ou gerar mocks. Preserve as
+  interfaces públicas existentes; migração de contratos exige escopo próprio.
+- Em APIs novas, prefira construtores que retornem o tipo concreto, salvo razão
+  específica para ocultar a implementação. Não altere retornos existentes por estilo.
+- Implementações devem preservar semântica de erros, cancelamento e concorrência
+  do contrato, não apenas satisfazer suas assinaturas.
 
 ## SOLID aqui
 
@@ -30,7 +44,7 @@ DIP: handler → **interface** de service → **interface** de repo/adapters.
 | **O** | Estender com novas funções/arquivos; evitar “mais um if” no centro de um god service |
 | **L** | Implementação honra o contrato da interface |
 | **I** | Interfaces pequenas (`ChatService`, não `EverythingService`) |
-| **D** | Depender de `WhatsmeowService` / repos, não de concretos |
+| **D** | Isolar dependências nas fronteiras que precisam de substituição, sem interfaces artificiais |
 
 ## Design patterns úteis
 
@@ -41,15 +55,17 @@ Não forçar Factory/Singleton/Observer sem necessidade.
 ## Clean Code
 
 - Nomes com intenção; early return; funções curtas
-- Extrair duplicação de bind/validate nos handlers do **mesmo** domínio
+- Extrair duplicação de bind/validate quando representar o **mesmo contrato**; não unir regras diferentes por semelhança visual
 - Logs via logger do projeto, com `instanceId` quando existir
 - Preferir composição a structs “faz-tudo”
 
 ## Refactor seguro ao tocar legado grande
 
 1. Em contribuições ao upstream: **cirúrgico** — só o caminho da tarefa (`fork-community-scope`).
-2. Prefactor útil à feature → PR `refactor:` **antes**, não no mesmo PR da feature (prática Kubernetes).
+2. Extração local necessária para implementar/testar a tarefa cabe no mesmo diff; reorganizações independentes ficam em outro PR.
 3. Extrair no mesmo package sem expandir API pública sem motivo.
-4. `make fmt` / `make lint` / testes **do pacote tocado**, sem reformatar o monorepo.
+4. Formatação e testes conforme `AGENTS.md`, sem reformatar arquivos fora da mudança.
 
 Referência de anti-patterns (código novo): `maintainability-modern-go`.
+
+Referência: [Go Code Review Comments — Interfaces](https://go.dev/wiki/CodeReviewComments#interfaces).

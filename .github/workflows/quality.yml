@@ -1,0 +1,80 @@
+name: Go Quality
+
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Build, vet, tests and race detector
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CGO_ENABLED: '1'
+      GOFLAGS: -mod=readonly
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Install native build and media dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential libjpeg-dev libwebp-dev ffmpeg poppler-utils
+
+      - name: Check formatting of changed Go files
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BASE: ${{ github.event.before }}
+        run: |
+          if [[ -n "$PR_BASE" ]]; then
+            base=$(git merge-base "$PR_BASE" HEAD)
+          elif [[ -n "$PUSH_BASE" && ! "$PUSH_BASE" =~ ^0+$ ]]; then
+            base="$PUSH_BASE"
+          else
+            base=$(git hash-object -t tree /dev/null)
+          fi
+
+          changed_files=$(mktemp)
+          trap 'rm -f "$changed_files"' EXIT
+          git diff --name-only --diff-filter=ACMR -z "$base" HEAD -- '*.go' > "$changed_files"
+          failed=0
+          while IFS= read -r -d '' file; do
+            unformatted=$(gofmt -l "./$file")
+            if [[ -n "$unformatted" ]]; then
+              printf 'Run gofmt on: %s\n' "$file"
+              failed=1
+            fi
+          done < "$changed_files"
+          exit "$failed"
+
+      - name: Verify dependencies
+        run: |
+          go mod download
+          go mod verify
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test -timeout 5m ./...
+
+      - name: Test with race detector
+        run: go test -race -timeout 5m ./...

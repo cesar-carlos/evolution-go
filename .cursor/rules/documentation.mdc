@@ -1,10 +1,14 @@
 ---
 description: Fonte da verdade da documentação — wiki vs Swagger vs código; o que está desatualizado
-globs: docs/**/*, README.md, CHANGELOG.md, VERSION, .env.example, COMMANDS.md
+globs: docs/**/*, README.md, CHANGELOG.md, VERSION, .env.example, COMMANDS.md, AGENTS.md, .cursor/rules/*.mdc
 alwaysApply: false
 ---
 
 # Documentação — fonte da verdade
+
+Para instruções de trabalho, `AGENTS.md` centraliza precedência e validação;
+as rules detalham os temas. A lista abaixo trata do comportamento implementado,
+não autoriza preservar bugs como se fossem contratos desejados.
 
 ## Prioridade (quando divergirem)
 
@@ -49,3 +53,8 @@ Não editar Swagger gerado à mão. Não inventar arquivos que a wiki/README lin
 - Idealmente o guia em `docs/wiki/guias-api/` correspondente
 - Passkey/licença: `passkey-pairing.md` + comentários do `.env.example`
 - Corrigir wiki/README só no **escopo** da mudança (ou PR `docs:` separado) — ver `fork-community-scope`
+- Documentar alterações incompatíveis, defaults e semântica de campos omitidos/nulos.
+- Ao alterar instruções, revisar referências cruzadas e comandos reais. Não duplicar
+  a mesma política em vários arquivos; referenciar a fonte canônica.
+- Documentar símbolos exportados e contratos não triviais conforme `go-standards`;
+  comentários de API complementam Swagger e não se limitam ao motivo da implementação.

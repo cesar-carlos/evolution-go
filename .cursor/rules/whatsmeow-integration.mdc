@@ -21,15 +21,33 @@ alwaysApply: false
 4. Preferir tipos `go.mau.fi/whatsmeow/types` (JIDs) quando o módulo já usa.
 5. Propagar `context` quando a API permitir; logs com `instanceId`.
 
+## Sessões, reconexão e envio
+
+- Uma sessão é acessada no escopo da instância autenticada. Documente ownership e
+  sincronize acesso a clientes/canais/cache conforme `go-standards`.
+- Considere conexão, desconexão, logout e reconexão concorrentes. Não permita que
+  callback de uma sessão antiga sobrescreva o estado de sua substituta.
+- Garanta término dos workers e timers associados à sessão encerrada, sem impedir
+  a finalização de outras instâncias. Evite múltiplas reconexões simultâneas para a mesma sessão.
+- Em retries de envio, diferencie falha anterior ao envio de resultado incerto após
+  transmissão. Preserve ID quando suportado e avalie deduplicação; um timeout não
+  prova que o destinatário não recebeu a mensagem.
+- Não repetir automaticamente operações com efeito externo sem política explícita.
+  Tentativas e espera total são limitadas e canceláveis.
+
 ## Passkey / QR
 
 - Guia: `docs/wiki/guias-api/passkey-pairing.md`
 - Env: `PASSKEY_PUBLIC_URL` = URL **pública** desta API (alcançável pelo browser / extensão). Não usar `localhost` se o browser estiver em outra máquina.
 - Fluxo QR clássico: `docs/wiki/recursos-avancados/qrcode-connection.md` (validar paths contra `pkg/routes`).
 - Não inventar bypass headless de WebAuthn; não logar credenciais de sessão.
+- Preserve expiração, token efêmero e confirmação humana da cerimônia conforme o
+  contrato atual; não reutilize token permanente de instância como atalho.
 
 ## Cuidados
 
 - Mudança em whatsmeow afeta todas as instâncias — localizar e testar.
 - Evitar proliferar `time.Sleep` em hot paths; se legado exigir, documentar.
 - Licença headless: `EVOLUTION_OPERATOR_EMAIL` no `.env.example` (fluxo `/license` / register auto).
+- Teste falhas e concorrência com fakes/adapters; E2E real é separado e depende de
+  ambiente e autorização adequados. Consulte `testing-quality`.

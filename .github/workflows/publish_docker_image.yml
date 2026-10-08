@@ -6,8 +6,15 @@ on:
       - main
 
 jobs:
+  quality:
+    name: Quality checks
+    permissions:
+      contents: read
+    uses: ./.github/workflows/quality.yml
+
   build_deploy:
     name: Build and Deploy
+    needs: quality
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -20,7 +27,7 @@ jobs:
 
       - name: Read version
         id: version
-        run: echo "version=$(cat VERSION 2>/dev/null || echo '0.0.0')" >> $GITHUB_OUTPUT
+        run: echo "version=$(cat VERSION 2>/dev/null || echo '0.0.0')" >> "$GITHUB_OUTPUT"
 
       - name: Docker meta
         id: meta

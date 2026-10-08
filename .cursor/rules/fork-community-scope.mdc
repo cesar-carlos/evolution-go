@@ -14,7 +14,11 @@ Fontes: [Kubernetes PR guide](https://github.com/kubernetes/community/blob/main/
 - **Imitar** naming, package layout (`chat_handler` / `chat_service`), shape de respostas `gin.H`, DI e padrões do módulo vizinho.
 - Não impor estilo pessoal, “Go moderno” ou Clean Architecture se isso divergir do arquivo tocado.
 - Código legado imperfeito: **corrija só o necessário** para a tarefa; não “aproveite” para limpar o pacote inteiro.
-- Melhorias estruturais (extrair god file, renomear em massa) → **PR/commit separado**, nunca misturado com feat/fix.
+- Preserve nomenclatura, contratos e organização locais, mas não reproduza falhas
+  de concorrência, isolamento, tratamento de erros ou recursos. A precedência é a
+  de `AGENTS.md`; corrija o necessário no caminho alterado e cubra a regressão.
+- Melhorias estruturais independentes (reorganizar um god file inteiro, renomear em
+  massa) → **PR/commit separado**. Extrações locais necessárias seguem o princípio #4.
 
 ## Princípio #2 — um escopo, poucos arquivos
 
@@ -22,7 +26,8 @@ Fontes: [Kubernetes PR guide](https://github.com/kubernetes/community/blob/main/
 - Não misturar: fix + refactor + fmt em arquivos não relacionados + “já que estou aqui…”.
 - Evitar PRs que “atravessam o repositório”; se tocar muitos pacotes sem necessidade, **dividir**.
 - Alvo: diff revisável em ~15–20 min; preferir vários PRs pequenos a um monólito.
-- Antes de editar: listar arquivos no escopo; se a lista crescer, parar e cortar o escopo.
+- Antes de editar: identificar arquivos no escopo; se a lista crescer, avaliar a
+  necessidade. Não omitir consumidores, testes ou documentação necessários à correção.
 
 ## Princípio #3 — o que NÃO fazer no mesmo PR
 
@@ -33,15 +38,17 @@ Fontes: [Kubernetes PR guide](https://github.com/kubernetes/community/blob/main/
 | Atualizar deps não pedidas | PR `chore:` separado |
 | Reescrever handler vizinho “no mesmo estilo” | Só o caminho da feature/bug |
 | Regenerar swagger sem mudar API | Não tocar `docs/swagger*` |
-| “Prefactor” grande + feature | Prefactor em PR prévio |
+| Refatoração ampla independente + feature | Refatoração em PR próprio |
 
-## Princípio #4 — estilo local > regra genérica
+## Princípio #4 — preservar estilo sem propagar defeitos
 
 Quando `maintainability-modern-go` ou SOLID conflitar com o estilo do arquivo:
 
-1. **Seguir o estilo local** do módulo/arquivo.
-2. Código **totalmente novo** (arquivo/pacote novo): aí aplicar práticas modernas e anti-god-class.
-3. Extrair monólito só se for **necessário** para a mudança ou em PR `refactor:` explícito.
+1. Siga a precedência de `AGENTS.md`: correção e isolamento antes do estilo.
+2. Preserve convenções locais; práticas de manutenção também se aplicam a novas
+   funções em arquivos legados, sem exigir a migração do pacote inteiro.
+3. Extrações locais necessárias para implementar ou testar a tarefa cabem no mesmo
+   diff. Extrações amplas e independentes ficam em PR `refactor:` separado.
 
 ## Checklist de escopo (antes de commit/PR)
 

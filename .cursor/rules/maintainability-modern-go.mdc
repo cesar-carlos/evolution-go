@@ -7,17 +7,21 @@ alwaysApply: true
 
 Objetivo: código **fácil de ler, testar e alterar**. Preferir clareza a “cleverness”.
 
-**Conflito com contribuição ao fork:** ver `fork-community-scope`. Em PRs para o upstream, **escopo mínimo e estilo local vencem**. Limites e extrações abaixo aplicam-se sobretudo a **código novo** ou a PRs `refactor:` dedicados — não como desculpa para tocar dezenas de arquivos num `fix:`/`feat:`.
+Precedência: `AGENTS.md`. Preserve estilo e escopo, sem reproduzir problemas de
+correção, isolamento ou recursos. A menor mudança completa inclui tratamento de falhas.
 
-## Limites práticos (código novo / PR refactor explícito)
+## Sinais para revisão, não limites obrigatórios
 
-| Unidade | Alvo | Ação se passar |
+| Unidade | Sinal | Pergunta de revisão |
 |---------|------|----------------|
-| Arquivo `.go` | ≤ ~400 linhas | Extrair helpers, DTOs ou casos de uso |
-| Função | ≤ ~40–50 linhas | Quebrar em passos nomeados |
-| Struct com deps | ≤ ~5–7 campos injetados | Dividir serviço / facade |
-| Interface | Poucos métodos coesos | ISP — interfaces por consumidor |
-| Pacote | Um domínio claro | Não misturar `send`+`media`+`poll` sem necessidade |
+| Arquivo `.go` | Mais de ~400 linhas | Há responsabilidades independentes para separar? |
+| Função | Mais de ~50 linhas | Mistura casos de uso ou oculta decisões importantes? |
+| Struct com deps | Mais de ~7 campos injetados | Acumula responsabilidades que mudam separadamente? |
+| Interface | Muitos métodos | Cada consumidor precisa de todos eles? |
+| Pacote | Vários domínios | Há um motivo concreto para mantê-los juntos? |
+
+Não fragmente código apenas para atingir uma contagem. Tabelas, DTOs e fluxos
+coesos podem ultrapassar esses sinais. Preserve a facilidade de seguir o fluxo.
 
 Arquivos legados enormes (ex.: `send_service.go`): em **feat/fix**, mudar só o trecho necessário no estilo atual. Extração ampla → PR `refactor:` separado.
 
@@ -45,7 +49,7 @@ Como evitar / corrigir:
 - Comparar erro por string; usar `%w`, `errors.Is` / `As`
 - `time.Sleep` fixo para “esperar conexão” em código novo (preferir wait/ready/context)
 - Goroutine sem cancelamento / sem ownership claro
-- Comentários que só repetem o nome da função
+- Comentários internos redundantes; comentários de API devem explicar seu contrato
 - Abstração “Clean Architecture Java” (pastas `controllers/` globais) — manter `pkg/<domínio>/`
 - Interface sem consumidor (YAGNI)
 - Boolean soup (`doX(a, true, false, true)`) — usar options/structs
@@ -53,24 +57,25 @@ Como evitar / corrigir:
 ## Go moderno (preferir)
 
 ```go
-// context desde a borda HTTP
-ctx := c.Request.Context()
-result, err := s.doSomething(ctx, input)
-
-// erros com contexto
-return fmt.Errorf("send text to %s: %w", chat, err)
-
-// zero value / early return
 if input.Chat == "" {
     return nil, ErrChatRequired
 }
+
+result, err := s.doSomething(ctx, input)
+if err != nil {
+    return nil, fmt.Errorf("send text to %s: %w", input.Chat, err)
+}
+return result, nil
 ```
 
 - `context.Context` como **primeiro** parâmetro em I/O novo
 - `min`/`max` built-in, `slices`/`maps` da stdlib quando simplificarem
-- Testes de tabela (`t.Run`) para regras novas
-- Construtores `New...` retornando interface ou struct pequena
+- Testes de comportamento conforme `testing-quality`; tabelas quando ajudarem a expressar os casos
+- Construtores e interfaces conforme `architecture-solid-clean`
 - Imutabilidade prática: não compartilhar maps/slices sem disciplina; documentar ownership
+- Documente símbolos exportados e comportamentos não triviais: entradas, resultados,
+  erros, responsabilidade por recursos e concorrência quando relevantes. Comentários
+  não se limitam ao “porquê”; veja [Go Doc Comments](https://go.dev/doc/comment).
 
 ## Checklist antes de concluir uma mudança
 
@@ -79,3 +84,4 @@ if input.Chat == "" {
 - [ ] Service não ficou mais “deus” do que já era?
 - [ ] Erros e context tratados?
 - [ ] Nome do arquivo/função revela a intenção?
+- [ ] Contratos preservados e regressões relevantes cobertas?

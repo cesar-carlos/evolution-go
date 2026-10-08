@@ -20,9 +20,11 @@ Disciplina de fork/escopo: rule `fork-community-scope` (sempre aplicar).
 
 ## Fluxo (fork → upstream)
 
-1. Branch `feature/...` ou `fix/...` a partir de `main` atualizada (não commitar feature direto em `main`)
+1. Usar a branch/base solicitada e as convenções da ferramenta; não criar ou trocar
+   branches nem descartar mudanças existentes apenas para cumprir um prefixo.
 2. Implementar **só o escopo** · imitar estilo do módulo
-3. `make fmt` / `make lint` **nos arquivos da mudança** · testar (`make check` se possível)
+3. Formatar arquivos alterados e validar pacotes afetados conforme `AGENTS.md`;
+   revisar o diff e registrar os resultados.
 4. PR pequeno para https://github.com/evolution-foundation/evolution-go · template · `Closes #N`
 5. Review: 1+ maintainer · responder no **mesmo** PR (não abrir outro)
 
@@ -37,16 +39,22 @@ Uma ideia por commit; mensagem explica o **porquê**. Corpo opcional `Closes #N`
 
 - [ ] Um único concern; poucos arquivos; sem drive-by
 - [ ] Estilo igual ao código vizinho
-- [ ] `make fmt` / `make lint` (sem reformatar o repo)
+- [ ] `gofmt` nos arquivos alterados e validações de `AGENTS.md`, sem reformatar o repo
 - [ ] `make swagger` **somente** se endpoints mudaram
 - [ ] Wiki / `.env.example` só se contrato/env mudou
-- [ ] `make test` / teste manual do caminho alterado
+- [ ] Regressões e contratos relevantes testados conforme `testing-quality`
+- [ ] Comandos executados, resultados e verificações indisponíveis registrados
 - [ ] Breaking change documentada (se houver)
 
 ## Make (targets reais)
 
 `make dev` · `make build` · `make test` · `make fmt` · `make lint` · `make swagger` · `make deps` · `make check`  
 Não usar `make build-local`.
+
+`make fmt` e `make check` podem formatar o repositório inteiro. Para alterações
+focadas, use os comandos de `AGENTS.md`. Não apresente teste manual como substituto
+de regressão automatizada quando ela for viável. Requisitos para merge dependem
+também da proteção de branch configurada no GitHub.
 
 ## Conduta
 
