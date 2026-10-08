@@ -201,8 +201,10 @@ func setupRouter(db *gorm.DB, authDB *sql.DB, sqliteDB *sql.DB, config *config.C
 	pollHandler := poll_handler.NewPollHandler(whatsmeowService.GetPollService(), loggerWrapper)
 
 	r := gin.New()
+	// WebSocket authentication uses a query token. Gin's default access logger
+	// includes the raw query, so keep this route out of automatic request logs.
 	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{
-		SkipPaths: []string{"/server/ok", "/message/markread"},
+		SkipPaths: []string{"/server/ok", "/message/markread", "/ws"},
 	}))
 	r.Use(gin.Recovery())
 
@@ -254,7 +256,7 @@ func setupRouter(db *gorm.DB, authDB *sql.DB, sqliteDB *sql.DB, config *config.C
 		instanceId := c.Query("instanceId")
 
 		if token != config.GlobalApiKey {
-			logger.LogError("Token inválido")
+			logger.LogError("Token inválido na conexão WebSocket")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token inválido"})
 			return
 		}
