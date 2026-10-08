@@ -1,6 +1,7 @@
 package instance_repository
 
 import (
+	"errors"
 	"fmt"
 
 	instance_model "github.com/evolution-foundation/evolution-go/pkg/instance/model"
@@ -121,11 +122,14 @@ func (i *instanceRepository) UpdateConnectSettings(instanceId string, updates ma
 	if len(updates) == 0 {
 		return nil
 	}
-	err := i.db.Model(&instance_model.Instance{}).Where("id = ?", instanceId).Updates(updates).Error
-	if err != nil {
-		logger.LogError("Error updating connect settings in DB: %v", err)
+	result := i.db.Model(&instance_model.Instance{}).Where("id = ?", instanceId).Updates(updates)
+	if result.Error != nil {
+		return result.Error
 	}
-	return err
+	if result.RowsAffected == 0 {
+		return instance_model.ErrInstanceNotFound
+	}
+	return nil
 }
 
 func (i *instanceRepository) GetAllConnectedInstances() ([]*instance_model.Instance, error) {
@@ -189,13 +193,16 @@ func (i *instanceRepository) GetAdvancedSettings(instanceId string) (*instance_m
 	err := i.db.Select("always_online, reject_call, msg_reject_call, read_messages, ignore_groups, ignore_status").
 		Where("id = ?", instanceId).First(&instance).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, instance_model.ErrInstanceNotFound
+		}
 		return nil, err
 	}
 
 	settings := &instance_model.AdvancedSettings{
 		AlwaysOnline:  instance_model.BoolPtr(instance.AlwaysOnline),
 		RejectCall:    instance_model.BoolPtr(instance.RejectCall),
-		MsgRejectCall: instance.MsgRejectCall,
+		MsgRejectCall: &instance.MsgRejectCall,
 		ReadMessages:  instance_model.BoolPtr(instance.ReadMessages),
 		IgnoreGroups:  instance_model.BoolPtr(instance.IgnoreGroups),
 		IgnoreStatus:  instance_model.BoolPtr(instance.IgnoreStatus),
@@ -215,17 +222,19 @@ func (i *instanceRepository) UpdateAdvancedSettings(instanceId string, settings 
 		return nil
 	}
 
-	err := i.db.Model(&instance_model.Instance{}).Where("id = ?", instanceId).Updates(updates).Error
-	if err != nil {
-		logger.LogError("Error updating advanced settings in DB: %v", err)
-		return err
+	result := i.db.Model(&instance_model.Instance{}).Where("id = ?", instanceId).Updates(updates)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return instance_model.ErrInstanceNotFound
 	}
 
 	return nil
 }
 
-// buildAdvancedSettingsUpdates only includes fields explicitly provided (*bool != nil).
-// MsgRejectCall is always written on PUT so an empty string can clear the reject message.
+// buildAdvancedSettingsUpdates writes only non-nil fields, including explicit
+// false flags and an empty reject message. Omitted/null fields stay unchanged.
 func buildAdvancedSettingsUpdates(settings *instance_model.AdvancedSettings) map[string]interface{} {
 	updates := map[string]interface{}{}
 	if settings == nil {
@@ -246,8 +255,8 @@ func buildAdvancedSettingsUpdates(settings *instance_model.AdvancedSettings) map
 	if settings.IgnoreStatus != nil {
 		updates["ignore_status"] = *settings.IgnoreStatus
 	}
-	if settings.MsgRejectCall != "" {
-		updates["msg_reject_call"] = settings.MsgRejectCall
+	if settings.MsgRejectCall != nil {
+		updates["msg_reject_call"] = *settings.MsgRejectCall
 	}
 	return updates
 }

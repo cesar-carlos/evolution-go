@@ -93,7 +93,10 @@ func TestApplyConnectSettings(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			inst := tt.instance
-			updates := applyConnectSettings(&inst, &tt.data)
+			updates, err := applyConnectSettings(&inst, &tt.data)
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			if inst.Events != tt.wantEvents {
 				t.Fatalf("Events = %q, want %q", inst.Events, tt.wantEvents)
