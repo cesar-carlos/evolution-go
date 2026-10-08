@@ -46,6 +46,22 @@ type userHandler struct {
 	userService user_service.UserService
 }
 
+// AvatarResponse preserves the existing success envelope.
+type AvatarResponse struct {
+	Message string         `json:"message"`
+	Data    *AvatarPicture `json:"data"`
+}
+
+// AvatarPicture matches the pinned whatsmeow profile-picture JSON contract.
+type AvatarPicture struct {
+	URL        string `json:"url"`
+	ID         string `json:"id"`
+	Type       string `json:"type"`
+	DirectPath string `json:"direct_path"`
+	// Hash is base64-encoded in JSON, or null when absent.
+	Hash []byte `json:"hash" swaggertype:"string" format:"byte"`
+}
+
 // UserInfoResponse describes the existing success envelope and additive PictureURL.
 type UserInfoResponse struct {
 	Message string                       `json:"message"`
@@ -142,9 +158,11 @@ func (u *userHandler) CheckUser(ctx *gin.Context) {
 // @Tags User
 // @Accept json
 // @Produce json
+// @Param apikey header string true "Instance API key"
 // @Param message body user_service.GetAvatarStruct true "Avatar data"
-// @Success 200 {object} gin.H "success"
+// @Success 200 {object} AvatarResponse "success"
 // @Failure 400 {object} gin.H "Error on validation"
+// @Failure 401 {object} gin.H "Missing or invalid instance API key"
 // @Failure 429 {object} gin.H "WhatsApp rate limit"
 // @Failure 500 {object} gin.H "Internal server error"
 // @Failure 504 {object} gin.H "WhatsApp query timeout"
@@ -175,8 +193,14 @@ func (u *userHandler) GetAvatar(ctx *gin.Context) {
 		writeUserWAError(ctx, err)
 		return
 	}
+	if pic == nil {
+		writeUserWAError(ctx, whatsmeow.ErrProfilePictureNotSet)
+		return
+	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "success", "data": pic})
+	ctx.JSON(http.StatusOK, AvatarResponse{Message: "success", Data: &AvatarPicture{
+		URL: pic.URL, ID: pic.ID, Type: pic.Type, DirectPath: pic.DirectPath, Hash: pic.Hash,
+	}})
 }
 
 // Get a user's contacts

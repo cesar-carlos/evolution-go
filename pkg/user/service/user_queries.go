@@ -213,7 +213,7 @@ func queryUserInfo(ctx context.Context, client profileQueryClient, lids store.LI
 
 // ExistingID is deliberately empty: unchanged-picture responses otherwise omit
 // the URL. The caller owns the deadline shared with lookup and enrichment.
-func fetchProfilePicture(ctx context.Context, client profileQueryClient, jid types.JID, preview bool) (*types.ProfilePictureInfo, error) {
+func fetchProfilePicture(ctx context.Context, client profilePictureClient, jid types.JID, preview bool) (*types.ProfilePictureInfo, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -238,16 +238,5 @@ func (u *userService) GetAvatar(ctx context.Context, data *GetAvatarStruct, inst
 	if err != nil {
 		return nil, err
 	}
-	jid, err := resolveQueryJID(ctx, client.Store.LIDs, jids[0])
-	if err != nil {
-		return nil, err
-	}
-	pic, err := fetchProfilePicture(ctx, client, jid, data.Preview)
-	if err != nil {
-		return nil, err
-	}
-	if pic == nil {
-		return nil, errors.New("no profile picture found")
-	}
-	return pic, nil
+	return queryAvatar(ctx, client, client.Store.LIDs, jids[0], data.Preview)
 }

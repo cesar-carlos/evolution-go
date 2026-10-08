@@ -3471,6 +3471,13 @@ const docTemplate = `{
                 "summary": "Get a user's avatar",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Instance API key",
+                        "name": "apikey",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
                         "description": "Avatar data",
                         "name": "message",
                         "in": "body",
@@ -3484,11 +3491,17 @@ const docTemplate = `{
                     "200": {
                         "description": "success",
                         "schema": {
-                            "$ref": "#/definitions/gin.H"
+                            "$ref": "#/definitions/pkg_user_handler.AvatarResponse"
                         }
                     },
                     "400": {
                         "description": "Error on validation",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid instance API key",
                         "schema": {
                             "$ref": "#/definitions/gin.H"
                         }
@@ -5363,6 +5376,39 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "pkg_user_handler.AvatarPicture": {
+            "type": "object",
+            "properties": {
+                "direct_path": {
+                    "type": "string"
+                },
+                "hash": {
+                    "description": "Hash is base64-encoded in JSON, or null when absent.",
+                    "type": "string",
+                    "format": "byte"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "pkg_user_handler.AvatarResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/pkg_user_handler.AvatarPicture"
+                },
+                "message": {
                     "type": "string"
                 }
             }

@@ -950,6 +950,28 @@ definitions:
       phone:
         type: string
     type: object
+  pkg_user_handler.AvatarPicture:
+    properties:
+      direct_path:
+        type: string
+      hash:
+        description: Hash is base64-encoded in JSON, or null when absent.
+        format: byte
+        type: string
+      id:
+        type: string
+      type:
+        type: string
+      url:
+        type: string
+    type: object
+  pkg_user_handler.AvatarResponse:
+    properties:
+      data:
+        $ref: '#/definitions/pkg_user_handler.AvatarPicture'
+      message:
+        type: string
+    type: object
   pkg_user_handler.UserInfoResponse:
     properties:
       data:
@@ -9391,6 +9413,11 @@ paths:
       description: Get a user's avatar with an eight-second request budget, including
         session readiness and LID resolution.
       parameters:
+      - description: Instance API key
+        in: header
+        name: apikey
+        required: true
+        type: string
       - description: Avatar data
         in: body
         name: message
@@ -9403,9 +9430,13 @@ paths:
         "200":
           description: success
           schema:
-            $ref: '#/definitions/gin.H'
+            $ref: '#/definitions/pkg_user_handler.AvatarResponse'
         "400":
           description: Error on validation
+          schema:
+            $ref: '#/definitions/gin.H'
+        "401":
+          description: Missing or invalid instance API key
           schema:
             $ref: '#/definitions/gin.H'
         "429":
