@@ -780,7 +780,7 @@ curl -X POST http://localhost:4000/instance/connect \
   -H "apikey: token-vendas-123" \
   -d '{
     "webhookUrl": "https://meu-servidor.com/webhook",
-    "subscribe": ["messages.upsert"]
+    "subscribe": ["MESSAGE"]
   }'
 ```
 
