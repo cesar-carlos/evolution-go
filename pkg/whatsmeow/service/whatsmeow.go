@@ -1133,6 +1133,14 @@ func (mycli *MyClient) myEventHandler(rawEvt interface{}) {
 
 		postMap["data"] = dataMap
 	case *events.Message:
+		if evt == nil {
+			return
+		}
+		// whatsmeow may deliver this event to other handlers. Normalize an owned
+		// copy; protobuf messages remain read-only unless replaced after decrypt.
+		messageEvent := *evt
+		evt = &messageEvent
+		postMap["data"] = evt
 		doWebhook = true
 		postMap["event"] = "Message"
 		// Message received
@@ -1182,44 +1190,12 @@ func (mycli *MyClient) myEventHandler(rawEvt interface{}) {
 			return
 		}
 
-		// Decrypt MESSAGE_EDIT BEFORE LID/PN JID swap. whatsmeow derives the edit
-		// key from Info.Sender/Chat as received on the wire; swapping first causes
-		// cipher: message authentication failed even when the secret exists.
-		secretEditEnvelope := false
-		decryptFailed := false
-		if enc := evt.Message.GetSecretEncryptedMessage(); enc != nil &&
-			enc.GetSecretEncType() == waE2E.SecretEncryptedMessage_MESSAGE_EDIT {
-			secretEditEnvelope = true
-			evt.IsEdit = true
-
-			client := mycli.clientPointer[mycli.userID]
-			if client == nil {
-				client = mycli.WAClient
-			}
-			if client == nil {
-				decryptFailed = true
-				mycli.loggerWrapper.GetLogger(mycli.userID).LogWarn(
-					"[%s] No client available to decrypt secret encrypted message edit", mycli.userID)
-			} else {
-				decrypted, err := client.DecryptSecretEncryptedMessage(context.Background(), evt)
-				if err != nil {
-					decryptFailed = true
-					mycli.loggerWrapper.GetLogger(mycli.userID).LogWarn(
-						"[%s] Failed to decrypt secret encrypted message edit: %v",
-						mycli.userID, err)
-				} else {
-					evt.Message = decrypted
-					mycli.loggerWrapper.GetLogger(mycli.userID).LogInfo(
-						"[%s] Decrypted secret encrypted message edit for %s", mycli.userID, evt.Info.ID)
-				}
-			}
-		}
-
-		// EditedMessage wrapper (legacy wire format or post-decrypt). Do not call
-		// UnwrapRaw here — it resets Message from RawMessage and would undo decrypt.
-		if evt.Message != nil && evt.Message.GetEditedMessage().GetMessage() != nil {
-			evt.Message = evt.Message.GetEditedMessage().GetMessage()
-			evt.IsEdit = true
+		// Decrypt with the owning session before changing the wire JIDs.
+		decryptFailed, err := prepareIncomingMessageEdit(context.Background(), mycli.WAClient, evt)
+		if err != nil {
+			// Store/crypto errors can include private identifiers or credentials.
+			mycli.loggerWrapper.GetLogger(mycli.userID).LogWarn(
+				"[%s] Could not decrypt incoming message edit %s; forwarding encrypted envelope", mycli.userID, evt.Info.ID)
 		}
 
 		// Trata o caso especial onde Sender é @lid e SenderAlt é @s.whatsapp.net
@@ -1277,12 +1253,12 @@ func (mycli *MyClient) myEventHandler(rawEvt interface{}) {
 		}
 
 		parsedMessageType := utils.GetMessageType(evt.Message)
-		if parsedMessageType == "ignore" || strings.HasPrefix(parsedMessageType, "unknown_protocol_") {
+		if (parsedMessageType == "ignore" || strings.HasPrefix(parsedMessageType, "unknown_protocol_")) && !evt.IsEdit {
 			mycli.loggerWrapper.GetLogger(mycli.userID).LogInfo("[%s] Message ignored because it's a unknown protocol message", mycli.userID)
 			return
 		}
 
-		if parsedMessageType == "edit" || secretEditEnvelope {
+		if parsedMessageType == "edit" {
 			evt.IsEdit = true
 		}
 
@@ -1310,28 +1286,7 @@ func (mycli *MyClient) myEventHandler(rawEvt interface{}) {
 			dataMap = make(map[string]interface{})
 		}
 
-		// Explicit action flags for edit/revoke — protocolMessage.type alone is a
-		// numeric enum (0 = REVOKE, 14 = MESSAGE_EDIT) and Info.Edit is opaque.
-		switch parsedMessageType {
-		case "edit":
-			dataMap["IsEdit"] = true
-			dataMap["messageType"] = "edit"
-			setProtocolMessageTypeName(dataMap, "MESSAGE_EDIT")
-		case "revoke":
-			dataMap["IsRevoke"] = true
-			dataMap["messageType"] = "revoke"
-			setProtocolMessageTypeName(dataMap, "REVOKE")
-		default:
-			// Decrypt failed or plaintext not yet classified as "edit", but envelope
-			// already identified the event as an incoming message edit.
-			if secretEditEnvelope {
-				dataMap["IsEdit"] = true
-				dataMap["messageType"] = "edit"
-			}
-		}
-		if decryptFailed {
-			dataMap["decryptFailed"] = true
-		}
+		annotateMessageAction(dataMap, evt, decryptFailed)
 
 		referral := extractReferralFromMessage(evt.Message)
 
@@ -1661,7 +1616,9 @@ func (mycli *MyClient) myEventHandler(rawEvt interface{}) {
 		}
 
 		isGroup := strings.HasSuffix(evt.Info.Chat.String(), "@g.us")
-		if isGroup {
+		// Forward a failed edit without querying optional group metadata from an
+		// unavailable session or delaying its encrypted fallback with network I/O.
+		if isGroup && !decryptFailed && mycli.WAClient != nil && mycli.WAClient.Store != nil {
 			groupData, err := mycli.WAClient.GetGroupInfo(context.Background(), evt.Info.Chat)
 			if err == nil {
 				dataMap["groupData"] = groupData
@@ -2946,22 +2903,6 @@ func (w *whatsmeowService) ConfirmPasskey(instanceId string) error {
 	}
 	w.passkeyCeremony.SetConfirmed(instanceId)
 	return nil
-}
-
-// setProtocolMessageTypeName adds a human-readable protocolMessage.typeName
-// (e.g. REVOKE, MESSAGE_EDIT) without replacing the numeric type enum.
-func setProtocolMessageTypeName(dataMap map[string]interface{}, typeName string) {
-	message, ok := dataMap["Message"].(map[string]interface{})
-	if !ok {
-		return
-	}
-	pm, ok := message["protocolMessage"].(map[string]interface{})
-	if !ok {
-		return
-	}
-	pm["typeName"] = typeName
-	message["protocolMessage"] = pm
-	dataMap["Message"] = message
 }
 
 // cleanSenderID remove a parte ":numero" do sender ID para exibir apenas o remoteJid correto
