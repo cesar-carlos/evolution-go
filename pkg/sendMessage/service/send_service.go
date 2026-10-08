@@ -2638,13 +2638,19 @@ func (s *sendService) SendMessage(instance *instance_model.Instance, msg *waE2E.
 
 			var mentionedJIDs []string
 			for _, participant := range groupInfo.Participants {
-				mentionedJIDs = append(mentionedJIDs, participantMentionJID(participant))
+				if jid := participantMentionJID(participant); jid != "" {
+					mentionedJIDs = append(mentionedJIDs, jid)
+				}
 			}
-			setMessageMentionedJIDs(msg, messageType, mentionedJIDs)
+			if len(mentionedJIDs) > 0 && !setMessageMentionedJIDs(msg, mentionedJIDs) {
+				return nil, fmt.Errorf("cannot apply mentions to message type %s", messageType)
+			}
 		}
 
 		if len(data.MentionedJID) > 0 {
-			setMessageMentionedJIDs(msg, messageType, data.MentionedJID)
+			if !setMessageMentionedJIDs(msg, data.MentionedJID) {
+				return nil, fmt.Errorf("cannot apply mentions to message type %s", messageType)
+			}
 		}
 	}
 
