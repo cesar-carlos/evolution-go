@@ -1,32 +1,41 @@
 package instance_service
 
 import (
+	"errors"
+	"fmt"
+	"slices"
 	"strings"
 
 	instance_model "github.com/evolution-foundation/evolution-go/pkg/instance/model"
 	event_types "github.com/evolution-foundation/evolution-go/pkg/internal/event_types"
 )
 
+// ErrInvalidConnectSettings identifies invalid input without mutating settings.
+var ErrInvalidConnectSettings = errors.New("invalid connect settings")
+
 // applyConnectSettings mutates instance only for fields explicitly provided.
 // Empty subscribe keeps existing Events; defaults to MESSAGE only when Events is empty.
 // Empty producer strings keep existing values; send "disabled" or "false" to turn off.
-func applyConnectSettings(instance *instance_model.Instance, data *ConnectStruct) map[string]interface{} {
+func applyConnectSettings(instance *instance_model.Instance, data *ConnectStruct) (map[string]interface{}, error) {
 	updates := map[string]interface{}{}
 	if instance == nil || data == nil {
-		return updates
+		return updates, ErrInvalidConnectSettings
 	}
 
 	if len(data.Subscribe) > 0 {
 		var subscribedEvents []string
-		if data.Subscribe[0] == "ALL" {
-			subscribedEvents = append(subscribedEvents, event_types.AllEventTypes...)
-		} else {
-			for _, arg := range data.Subscribe {
-				if !event_types.IsEventType(arg) {
-					continue
-				}
+		for _, arg := range data.Subscribe {
+			arg = strings.TrimSpace(arg)
+			if arg == event_types.ALL {
+				subscribedEvents = append([]string(nil), event_types.AllEventTypes...)
+				break
+			}
+			if event_types.IsEventType(arg) && !slices.Contains(subscribedEvents, arg) {
 				subscribedEvents = append(subscribedEvents, arg)
 			}
+		}
+		if len(subscribedEvents) == 0 {
+			return nil, fmt.Errorf("%w: subscribe must contain a valid event or ALL", ErrInvalidConnectSettings)
 		}
 		eventString := strings.Join(subscribedEvents, ",")
 		instance.Events = eventString
@@ -53,7 +62,7 @@ func applyConnectSettings(instance *instance_model.Instance, data *ConnectStruct
 		updates["web_socket_enable"] = data.WebSocketEnable
 	}
 
-	return updates
+	return updates, nil
 }
 
 func splitSubscribedEvents(events string) []string {

@@ -1,11 +1,15 @@
 package instance_model
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
+
+// ErrInstanceNotFound indicates that a settings operation found no instance row.
+var ErrInstanceNotFound = errors.New("instance not found")
 
 type Instance struct {
 	Id               string    `json:"id" gorm:"type:uuid;primaryKey"`
@@ -36,14 +40,14 @@ type Instance struct {
 }
 
 // AdvancedSettings representa as configurações avançadas de uma instância.
-// Bool fields are pointers so omitted JSON keys are not written as false on PUT.
+// Pointer fields preserve omitted/null keys during partial updates.
 type AdvancedSettings struct {
-	AlwaysOnline  *bool  `json:"alwaysOnline"`
-	RejectCall    *bool  `json:"rejectCall"`
-	MsgRejectCall string `json:"msgRejectCall"`
-	ReadMessages  *bool  `json:"readMessages"`
-	IgnoreGroups  *bool  `json:"ignoreGroups"`
-	IgnoreStatus  *bool  `json:"ignoreStatus"`
+	AlwaysOnline  *bool   `json:"alwaysOnline"`
+	RejectCall    *bool   `json:"rejectCall"`
+	MsgRejectCall *string `json:"msgRejectCall"`
+	ReadMessages  *bool   `json:"readMessages"`
+	IgnoreGroups  *bool   `json:"ignoreGroups"`
+	IgnoreStatus  *bool   `json:"ignoreStatus"`
 }
 
 func (m *Instance) BeforeCreate(tx *gorm.DB) (err error) {

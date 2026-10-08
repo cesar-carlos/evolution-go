@@ -195,7 +195,9 @@ func (i instances) Create(data *CreateStruct) (*instance_model.Instance, error) 
 		if data.AdvancedSettings.RejectCall != nil {
 			instance.RejectCall = *data.AdvancedSettings.RejectCall
 		}
-		instance.MsgRejectCall = data.AdvancedSettings.MsgRejectCall
+		if data.AdvancedSettings.MsgRejectCall != nil {
+			instance.MsgRejectCall = *data.AdvancedSettings.MsgRejectCall
+		}
 		if data.AdvancedSettings.ReadMessages != nil {
 			instance.ReadMessages = *data.AdvancedSettings.ReadMessages
 		}
@@ -216,19 +218,20 @@ func (i instances) Create(data *CreateStruct) (*instance_model.Instance, error) 
 }
 
 func (i instances) Connect(data *ConnectStruct, instance *instance_model.Instance) (*instance_model.Instance, string, string, error) {
+	if data == nil || instance == nil {
+		return nil, "", "", ErrInvalidConnectSettings
+	}
+	// Work on a snapshot: middleware/cache may still own the original instance.
+	// Failed validation or persistence must not publish uncommitted settings.
+	nextInstance := *instance
+	updates, err := applyConnectSettings(&nextInstance, data)
+	if err != nil {
+		return nil, "", "", err
+	}
 	i.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Processing subscribe events: %v", instance.Id, data.Subscribe)
 
 	oldEvents := instance.Events
 	oldRabbitmq := instance.RabbitmqEnable
-
-	updates := applyConnectSettings(instance, data)
-
-	if instance.Events != oldEvents {
-		i.loggerWrapper.GetLogger(instance.Id).LogWarn("[%s] events changed: %q -> %q", instance.Id, oldEvents, instance.Events)
-	}
-	if instance.RabbitmqEnable != oldRabbitmq {
-		i.loggerWrapper.GetLogger(instance.Id).LogWarn("[%s] rabbitmqEnable changed: %q -> %q", instance.Id, oldRabbitmq, instance.RabbitmqEnable)
-	}
 
 	if len(updates) > 0 {
 		err := i.instanceRepository.UpdateConnectSettings(instance.Id, updates)
@@ -238,6 +241,14 @@ func (i instances) Connect(data *ConnectStruct, instance *instance_model.Instanc
 		}
 	}
 
+	instance = &nextInstance
+	if instance.Events != oldEvents {
+		i.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] events changed: %q -> %q", instance.Id, oldEvents, instance.Events)
+	}
+	if instance.RabbitmqEnable != oldRabbitmq {
+		i.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] rabbitmqEnable changed: %q -> %q", instance.Id, oldRabbitmq, instance.RabbitmqEnable)
+	}
+
 	subscribedEvents := splitSubscribedEvents(instance.Events)
 	eventString := instance.Events
 
@@ -245,8 +256,11 @@ func (i instances) Connect(data *ConnectStruct, instance *instance_model.Instanc
 	isInstanceRunning := i.clientPointer[instance.Id] != nil
 
 	// Sincroniza as configurações na instância em execução (se já estiver conectada)
-	err := i.whatsmeowService.UpdateInstanceSettings(instance.Id)
+	err = i.whatsmeowService.UpdateInstanceSettings(instance.Id)
 	if err != nil {
+		if isInstanceRunning {
+			return nil, "", "", fmt.Errorf("sync instance settings: %w", err)
+		}
 		i.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Instance not in runtime yet, will be updated when connected", instance.Id)
 		isInstanceRunning = false
 	} else {
