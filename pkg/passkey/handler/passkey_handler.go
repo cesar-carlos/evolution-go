@@ -122,7 +122,7 @@ func (h *PasskeyHandler) SubmitResponse(c *gin.Context) {
 		return
 	}
 
-	if err := h.whatsmeowService.SubmitPasskeyResponse(instanceID, &resp); err != nil {
+	if err := h.whatsmeowService.SubmitPasskeyResponse(c.Request.Context(), instanceID, token, &resp); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -161,7 +161,7 @@ func (h *PasskeyHandler) Confirm(c *gin.Context) {
 		return
 	}
 
-	if err := h.whatsmeowService.ConfirmPasskey(instanceID); err != nil {
+	if err := h.whatsmeowService.ConfirmPasskey(c.Request.Context(), instanceID, token); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

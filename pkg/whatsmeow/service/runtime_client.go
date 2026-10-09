@@ -115,3 +115,28 @@ func (w whatsmeowService) PairingExpired(id string) bool {
 	defer slot.mu.RUnlock()
 	return slot.pairingExpired
 }
+
+// runtimeOperation joins the execution's completion barrier. Stop cancels its
+// context and cannot publish a replacement until this operation has returned.
+func (w whatsmeowService) runtimeOperation(id string) (*MyClient, func(), error) {
+	m := w.runtimeClient(id)
+	if m == nil || m.run == nil || !m.run.beginWork() {
+		return nil, nil, errors.New("no active session for instance " + id)
+	}
+	return m, m.run.workers.Done, nil
+}
+
+// ceremonyOperation revalidates the opaque token after joining the execution.
+// A handler lookup preceding stop/replacement cannot authorize the new client.
+func (w whatsmeowService) ceremonyOperation(id, token string) (*MyClient, func(), error) {
+	m, done, err := w.runtimeOperation(id)
+	if err != nil {
+		return nil, nil, err
+	}
+	owner, valid := w.passkeyCeremony.InstanceForToken(token)
+	if !valid || owner != id {
+		done()
+		return nil, nil, errors.New("ceremony not found or expired")
+	}
+	return m, done, nil
+}
