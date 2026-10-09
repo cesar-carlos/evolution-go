@@ -379,13 +379,20 @@ compatibilidade; publicação aprovada não representa comprovação de renderiz
   callbacks/limpeza antigos de afetar uma substituta.
 - Implementação: registro privado, identidade por execução, snapshots de settings,
   cancelamento difundido, conclusão explícita e reconexões coalescidas/limitadas.
+  A intenção de parada bloqueia novos retries antes de aguardar o gate da instância,
+  evitando a corrida entre cancelar uma reconexão e enfileirar outra.
   Transporte permanece vivo para logout depois de parar os workers. QR/passkey têm
   sinal de disponibilidade; polling não cria ciclos de QR após expiração.
   DeviceProps é clonado por cliente, evitando mutação global entre instâncias.
+  Atualizações de settings e respostas/confirmações HTTP de passkey pertencem à
+  execução; o token da cerimônia é revalidado após vincular a operação. Elas são canceladas e
+  aguardadas na parada; a limpeza remove a cerimônia antiga antes de outra execução.
 - Evidências: session_lifecycle_test.go cobre 32 inícios/paradas, isolamento,
   workers, substituição, exclusão durante startup, cinco retries, cancelamento,
   shutdown, espera de pareamento e ordem worker/logout/transporte.
-  session_qr_test.go verifica cancelamento da rotação, expiração sem reinício e
+  TestRuntimeOperationBelongsToExecution e TestOldCeremonyCannotAuthorizeReplacementClient
+  cobrem cancelamento, tokens antigos/acesso entre instâncias e barreira de requisições
+  passkey. session_qr_test.go verifica cancelamento da rotação, expiração sem reinício e
   preservação da cerimônia passkey ativa. Build/vet/testes completos/race Docker,
   PostgreSQL/SQLite reais, biblioteca, navegador e 12 guards de publicação passaram.
   Workflows conferidos com actionlint 1.7.12; CI do PR aprovada.

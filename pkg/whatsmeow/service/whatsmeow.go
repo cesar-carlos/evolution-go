@@ -74,8 +74,8 @@ type WhatsmeowService interface {
 	// Passkey (WebAuthn) pairing bridge — read by the public ceremony endpoint,
 	// written by the whatsmeow event goroutine.
 	PasskeyCeremonyStore() *ceremony.Store
-	SubmitPasskeyResponse(instanceId string, resp *types.WebAuthnResponse) error
-	ConfirmPasskey(instanceId string) error
+	SubmitPasskeyResponse(ctx context.Context, instanceId, token string, resp *types.WebAuthnResponse) error
+	ConfirmPasskey(ctx context.Context, instanceId, token string) error
 }
 
 type clientVersion struct {
@@ -461,7 +461,11 @@ func (w whatsmeowService) runClient(run *sessionRun) {
 	run.slot.mu.Lock()
 	run.client = mycli
 	run.slot.mu.Unlock()
-	run.cleanup = func() { client.RemoveEventHandler(mycli.eventHandlerID); client.Disconnect() }
+	run.cleanup = func() {
+		client.RemoveEventHandler(mycli.eventHandlerID)
+		client.Disconnect()
+		w.passkeyCeremony.Clear(cd.Instance.Id)
+	}
 
 	// A cancelled startup must interrupt dialing. Once connected, transport stays
 	// alive until workers and the optional logout action have finished.
@@ -2651,11 +2655,14 @@ func (w whatsmeowService) UpdateInstanceSettings(instanceId string) error {
 	}
 
 	// Verifica se o MyClient existe
-	myClient := w.runtimeClient(instanceId)
-	exists := myClient != nil
-	if !exists {
+	myClient, done, operationErr := w.runtimeOperation(instanceId)
+	if operationErr != nil {
 		w.loggerWrapper.GetLogger(instanceId).LogWarn("[%s] MyClient not found in runtime, instance may not be connected", instanceId)
-		return fmt.Errorf("instance %s not found in runtime", instanceId)
+		return operationErr
+	}
+	defer done()
+	if instance.Token != myClient.token {
+		return fmt.Errorf("instance %s was replaced", instanceId)
 	}
 
 	// Atualiza as subscriptions se os eventos mudaram
@@ -2714,11 +2721,14 @@ func (w whatsmeowService) UpdateInstanceAdvancedSettings(instanceId string) erro
 	}
 
 	// Verifica se o MyClient existe
-	myClient := w.runtimeClient(instanceId)
-	exists := myClient != nil
-	if !exists {
+	myClient, done, operationErr := w.runtimeOperation(instanceId)
+	if operationErr != nil {
 		w.loggerWrapper.GetLogger(instanceId).LogWarn("[%s] MyClient not found in runtime, instance may not be connected", instanceId)
-		return fmt.Errorf("instance %s not found in runtime", instanceId)
+		return operationErr
+	}
+	defer done()
+	if instance.Token != myClient.token {
+		return fmt.Errorf("instance %s was replaced", instanceId)
 	}
 
 	// Atualiza a instância no MyClient com as advanced settings atualizadas
@@ -2800,35 +2810,59 @@ func (w *whatsmeowService) PasskeyCeremonyStore() *ceremony.Store {
 
 // SubmitPasskeyResponse forwards the browser's WebAuthn assertion to WhatsApp
 // for the given instance. Called by POST /passkey-ceremony/{token}/response.
-func (w *whatsmeowService) SubmitPasskeyResponse(instanceId string, resp *types.WebAuthnResponse) error {
-	client := w.GetClient(instanceId)
-	if client == nil {
-		return fmt.Errorf("no active client for instance %s", instanceId)
+func (w *whatsmeowService) SubmitPasskeyResponse(ctx context.Context, instanceId, token string, resp *types.WebAuthnResponse) error {
+	if err := ctx.Err(); err != nil {
+		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	m, done, err := w.ceremonyOperation(instanceId, token)
+	if err != nil {
+		return err
+	}
+	defer done()
+	client := m.WAClient
+	operationCtx, cancel := context.WithTimeout(m.runtimeContext(), 45*time.Second)
+	stopCallerCancellation := context.AfterFunc(ctx, cancel)
+	defer stopCallerCancellation()
 	defer cancel()
-	if err := client.SendPasskeyResponse(ctx, resp); err != nil {
-		w.passkeyCeremony.SetError(instanceId, err.Error())
+	if err := client.SendPasskeyResponse(operationCtx, resp); err != nil {
+		if m.run.current() {
+			w.passkeyCeremony.SetError(instanceId, err.Error())
+		}
 		return err
 	}
 	// Server will asynchronously emit PairPasskeyConfirmation (or Error) into
 	// the event handler; move to the waiting stage in the meantime.
+	if !m.run.current() {
+		return context.Canceled
+	}
 	w.passkeyCeremony.SetAwaitingConfirmation(instanceId)
 	return nil
 }
 
 // ConfirmPasskey finishes the pairing after the user verified the code.
 // Called by POST /passkey-ceremony/{token}/confirm.
-func (w *whatsmeowService) ConfirmPasskey(instanceId string) error {
-	client := w.GetClient(instanceId)
-	if client == nil {
-		return fmt.Errorf("no active client for instance %s", instanceId)
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
-	defer cancel()
-	if err := client.SendPasskeyConfirmation(ctx); err != nil {
-		w.passkeyCeremony.SetError(instanceId, err.Error())
+func (w *whatsmeowService) ConfirmPasskey(ctx context.Context, instanceId, token string) error {
+	if err := ctx.Err(); err != nil {
 		return err
+	}
+	m, done, err := w.ceremonyOperation(instanceId, token)
+	if err != nil {
+		return err
+	}
+	defer done()
+	client := m.WAClient
+	operationCtx, cancel := context.WithTimeout(m.runtimeContext(), 45*time.Second)
+	stopCallerCancellation := context.AfterFunc(ctx, cancel)
+	defer stopCallerCancellation()
+	defer cancel()
+	if err := client.SendPasskeyConfirmation(operationCtx); err != nil {
+		if m.run.current() {
+			w.passkeyCeremony.SetError(instanceId, err.Error())
+		}
+		return err
+	}
+	if !m.run.current() {
+		return context.Canceled
 	}
 	w.passkeyCeremony.SetConfirmed(instanceId)
 	return nil

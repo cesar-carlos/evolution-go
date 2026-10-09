@@ -9,6 +9,7 @@ import (
 	"time"
 
 	instance_model "github.com/evolution-foundation/evolution-go/pkg/instance/model"
+	"github.com/evolution-foundation/evolution-go/pkg/passkey/ceremony"
 	"go.mau.fi/whatsmeow"
 )
 
@@ -340,5 +341,111 @@ func TestSettingsSnapshotsAreIndependentDuringUpdates(t *testing.T) {
 	wg.Wait()
 	if got := m.snapshot(); got.Instance.Id != "one" || got.subscriptions[0] != "ALL" {
 		t.Fatal("event mutated live settings")
+	}
+}
+
+func TestRuntimeOperationBelongsToExecution(t *testing.T) {
+	s, ctx := testSessions(t)
+	w := whatsmeowService{sessions: s}
+	r, err := s.start(ctx, sessionData("one"), func(r *sessionRun) {
+		r.slot.mu.Lock()
+		r.client = &MyClient{run: r}
+		r.slot.mu.Unlock()
+		liveSession(r)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	<-r.ready
+	m, done, err := w.runtimeOperation("one")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stopped := make(chan error, 1)
+	go func() { stopped <- s.stop(ctx, "one", StopManual, "", nil) }()
+	<-m.runtimeContext().Done()
+	select {
+	case err := <-stopped:
+		t.Fatal("stop bypassed request completion", err)
+	default:
+	}
+	if _, _, err := w.runtimeOperation("one"); err == nil {
+		t.Fatal("stopping execution accepted request")
+	}
+	done()
+	if err := <-stopped; err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestOldCeremonyCannotAuthorizeReplacementClient(t *testing.T) {
+	s, ctx := testSessions(t)
+	w := whatsmeowService{sessions: s, passkeyCeremony: ceremony.NewStore()}
+	oldToken := w.passkeyCeremony.Start("one", []byte(`{}`))
+	w.passkeyCeremony.Clear("one")
+	newToken := w.passkeyCeremony.Start("one", []byte(`{}`))
+	r, err := s.start(ctx, sessionData("one"), func(r *sessionRun) {
+		r.slot.mu.Lock()
+		r.client = &MyClient{run: r}
+		r.slot.mu.Unlock()
+		liveSession(r)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	<-r.ready
+	if _, _, err := w.ceremonyOperation("one", oldToken); err == nil {
+		t.Fatal("old token authorized replacement")
+	}
+	if _, _, err := w.ceremonyOperation("other", newToken); err == nil {
+		t.Fatal("cross-instance token authorized")
+	}
+	_, done, err := w.ceremonyOperation("one", newToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	done()
+}
+
+type gateWaitContext struct {
+	context.Context
+	waiting chan struct{}
+	once    sync.Once
+}
+
+func (c *gateWaitContext) Done() <-chan struct{} {
+	c.once.Do(func() { close(c.waiting) })
+	return c.Context.Done()
+}
+
+func TestStopIntentRejectsRacingReconnectBeforeGate(t *testing.T) {
+	s, ctx := testSessions(t)
+	r, err := s.start(ctx, sessionData("one"), liveSession)
+	if err != nil {
+		t.Fatal(err)
+	}
+	<-r.ready
+	if err := lockSession(ctx, r.slot); err != nil {
+		t.Fatal(err)
+	}
+	stopCtx := &gateWaitContext{Context: ctx, waiting: make(chan struct{})}
+	stopped := make(chan error, 1)
+	go func() { stopped <- s.stop(stopCtx, "one", StopManual, "", nil) }()
+	<-stopCtx.waiting // Stop intent is registered, but the gate is still held.
+	var loads atomic.Int32
+	s.wait = func(context.Context, time.Duration) error { return nil }
+	if err := s.reconnect("one", r, func(context.Context) (*ClientData, error) {
+		loads.Add(1)
+		return sessionData("one"), nil
+	}, liveSession); err != nil {
+		t.Fatal(err)
+	}
+	unlockSession(r.slot)
+	if err := <-stopped; err != nil {
+		t.Fatal(err)
+	}
+	s.operations.Wait()
+	if loads.Load() != 0 {
+		t.Fatal("reconnect bypassed pending stop intent")
 	}
 }
