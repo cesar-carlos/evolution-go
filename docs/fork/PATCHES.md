@@ -370,7 +370,7 @@ compatibilidade; publicação aprovada não representa comprovação de renderiz
   equivalentes, comprovados pelas regressões SQLite/PostgreSQL.
 ## F-020 — Ciclo de conexão por instância e encerramento dos workers
 
-- Estado: `local`; branch de integração, merge/CI pendentes.
+- Estado: `local`; commit `68f4725`, entrega pelo PR #13; CI em validação.
 - Comparação: 2026-10-09, base oficial `0.7.2`; issue #186 e revisão do #200.
   #200/#131 são referências de defeitos evitados, não merges incorporados.
 - Problema/esperado: mapas/canais compartilhados permitiam corridas, workers órfãos
@@ -395,3 +395,13 @@ compatibilidade; publicação aprovada não representa comprovação de renderiz
   o shutdown para rejeitar trabalho atrasado; não conservam clientes/pools ativos.
 - Retirada: ciclo oficial com isolamento, ownership e retries equivalentes,
   comprovado pelas regressões do fork, incluindo ausência de reinício intencional.
+
+### Candidata 0.7.2-cesar.4
+
+Inclui F-019 (storage) e F-020 (ciclo de vida), mantendo todos os patches anteriores
+e a base oficial 0.7.2. Candidata preparada em branch própria, sem movimentar tags
+publicadas. Publicação, digest e download público só serão registrados após os
+checks e o workflow da tag concluírem. Nenhuma implantação em produção autorizada
+por esta publicação. Reversão prevista para o digest de 0.7.2-cesar.3, após conferir
+compatibilidade dos bancos/sessões; não foram adicionadas migrações de aplicação
+nem atualizadas dependências nesta entrega.
