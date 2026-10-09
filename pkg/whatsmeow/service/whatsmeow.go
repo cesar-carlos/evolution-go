@@ -70,6 +70,7 @@ type clientVersion struct {
 }
 
 type whatsmeowService struct {
+	authStore          *authStore
 	instanceRepository instance_repository.InstanceRepository
 	authDB             *sql.DB
 	messageRepository  message_repository.MessageRepository
@@ -279,55 +280,11 @@ func (w whatsmeowService) ForceUpdateJid(instanceId string, number string) error
 	return nil
 }
 
-// Container/pool unico e capado pro store do whatsmeow.
-// Antes, cada StartClient (conectar E cada reconexao) chamava sqlstore.New(), abrindo
-// um *sql.DB novo sem cap e nunca fechado -> leak que saturava o Postgres do evogo_auth.
-// Agora e um container compartilhado, com pool limitado e conexao direta.
-// Somente o sucesso e memorizado: se a criacao falhar (ex.: Postgres indisponivel
-// no boot), a proxima chamada tenta de novo em vez de devolver o erro pra sempre.
-var (
-	sharedAuthContainer   *sqlstore.Container
-	sharedAuthContainerMu sync.Mutex
-)
-
+// A service-owned store reuses authDB without introducing another PostgreSQL pool.
+// Individual callers may cancel their wait through authStore.get(ctx); failed
+// initialization remains retryable and only upgraded containers are published.
 func (w whatsmeowService) getAuthContainer() (*sqlstore.Container, error) {
-	sharedAuthContainerMu.Lock()
-	defer sharedAuthContainerMu.Unlock()
-
-	if sharedAuthContainer != nil {
-		return sharedAuthContainer, nil
-	}
-
-	var dbLog waLog.Logger
-	if w.config.WaDebug != "" {
-		dbLog = waLog.Stdout("Database", w.config.WaDebug, true)
-	}
-	var dialect, address string
-	if w.config.PostgresAuthDB != "" {
-		dialect, address = "postgres", w.config.PostgresAuthDB
-	} else {
-		dialect = "sqlite"
-		address = fmt.Sprintf("file:%s/dbdata/main.db?_pragma=foreign_keys(1)&_busy_timeout=5000&cache=shared&mode=rwc&_journal_mode=WAL", w.exPath)
-	}
-	db, err := sql.Open(dialect, address)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open auth database: %w", err)
-	}
-	if dialect == "postgres" {
-		db.SetMaxOpenConns(20)
-		db.SetMaxIdleConns(5)
-		db.SetConnMaxLifetime(5 * time.Minute)
-		db.SetConnMaxIdleTime(2 * time.Minute)
-	} else {
-		db.SetMaxOpenConns(1)
-	}
-	container := sqlstore.NewWithDB(db, dialect, dbLog)
-	if err := container.Upgrade(context.Background()); err != nil {
-		_ = db.Close()
-		return nil, fmt.Errorf("failed to upgrade auth database: %w", err)
-	}
-	sharedAuthContainer = container
-	return sharedAuthContainer, nil
+	return w.authStore.get(context.Background())
 }
 
 func (w whatsmeowService) StartClient(cd *ClientData) {
@@ -1611,17 +1568,17 @@ func (mycli *MyClient) myEventHandler(rawEvt interface{}) {
 			buttonClickMap := map[string]interface{}{
 				"event": "ButtonClick",
 				"data": map[string]interface{}{
-					"buttonId":     buttonClickData["buttonId"],
-					"buttonText":   buttonClickData["buttonText"],
-					"type":         buttonClickData["type"],
-					"phone":        dataMap["Sender"],
-					"jid":          dataMap["Sender"],
-					"pushName":     dataMap["PushName"],
-					"messageId":    dataMap["ID"],
-					"chat":         dataMap["Chat"],
-					"fromMe":       dataMap["FromMe"],
-					"timestamp":    evt.Info.Timestamp.Unix(),
-					"extraData":    buttonClickData,
+					"buttonId":   buttonClickData["buttonId"],
+					"buttonText": buttonClickData["buttonText"],
+					"type":       buttonClickData["type"],
+					"phone":      dataMap["Sender"],
+					"jid":        dataMap["Sender"],
+					"pushName":   dataMap["PushName"],
+					"messageId":  dataMap["ID"],
+					"chat":       dataMap["Chat"],
+					"fromMe":     dataMap["FromMe"],
+					"timestamp":  evt.Info.Timestamp.Unix(),
+					"extraData":  buttonClickData,
 				},
 				"instanceToken": mycli.token,
 				"instanceId":    mycli.userID,
@@ -2701,6 +2658,7 @@ func NewWhatsmeowService(
 	pollSvc := poll_service.NewPollService(authDB, loggerWrapper)
 
 	return &whatsmeowService{
+		authStore:          newAuthStore(context.Background(), authDB, config.PostgresAuthDB, exPath, config.WaDebug),
 		instanceRepository: instanceRepository,
 		authDB:             authDB,
 		messageRepository:  messageRepository,

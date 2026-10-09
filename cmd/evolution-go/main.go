@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -312,9 +312,12 @@ func initPostgresAuthDB(config *config.Config) (*sql.DB, error) {
 	db.SetConnMaxLifetime(5 * time.Minute) // Reconectar após 5 minutos para evitar timeouts
 	db.SetConnMaxIdleTime(1 * time.Minute) // Fechar conexões ociosas após 1 minuto
 
-	err = db.Ping()
+	pingCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	err = db.PingContext(pingCtx)
 	if err != nil {
-		return nil, fmt.Errorf("erro ao pingar banco AUTH PostgreSQL: %v", err)
+		_ = db.Close()
+		return nil, fmt.Errorf("erro ao pingar banco AUTH PostgreSQL: %w", err)
 	}
 
 	logger.LogInfo("Conectado ao banco AUTH PostgreSQL com pool configurado")
