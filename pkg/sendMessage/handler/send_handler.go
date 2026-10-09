@@ -523,10 +523,15 @@ func (s *sendHandler) SendButton(ctx *gin.Context) {
 		return
 	}
 
-	var data *send_service.ButtonStruct
-	err := ctx.ShouldBindBodyWithJSON(&data)
+	data := new(send_service.ButtonStruct)
+	err := ctx.ShouldBindBodyWithJSON(data)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if data == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "message body is required"})
 		return
 	}
 
@@ -550,6 +555,11 @@ func (s *sendHandler) SendButton(ctx *gin.Context) {
 		return
 	}
 
+	if err := send_service.ValidateButton(data); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	message, err := s.sendMessageService.SendButton(data, instance)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -564,10 +574,10 @@ func (s *sendHandler) SendButton(ctx *gin.Context) {
 // @Description Send an interactive list message (single-select) rendered as a tappable menu.
 // @Description
 // @Description Required body fields: `number`, `title`, `description`, `footerText`, `buttonText`, `sections`.
-// @Description Each section must contain one or more `rows`. When `rowId` is omitted, the server generates a fallback ID.
+// @Description Each section must contain one or more `rows`. When `rowId` is omitted, the server generates an ID unique within the message. Duplicate explicit IDs are rejected.
 // @Description When `buttonText` is empty, the server falls back to "Ver Menu".
 // @Description
-// @Description Uses legacy `ListMessage` format (no ViewOnceMessage wrapper) so it renders on iOS, Android and WhatsApp Web.
+// @Description Uses a direct `ListMessage` with business metadata. Client rendering requires device homologation.
 // @Tags Send Message
 // @Accept json
 // @Produce json
@@ -585,10 +595,15 @@ func (s *sendHandler) SendList(ctx *gin.Context) {
 		return
 	}
 
-	var data *send_service.ListStruct
-	err := ctx.ShouldBindBodyWithJSON(&data)
+	data := new(send_service.ListStruct)
+	err := ctx.ShouldBindBodyWithJSON(data)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if data == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "message body is required"})
 		return
 	}
 
@@ -612,8 +627,8 @@ func (s *sendHandler) SendList(ctx *gin.Context) {
 		return
 	}
 
-	if data.ButtonText == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "button text is required"})
+	if err := send_service.ValidateList(data); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

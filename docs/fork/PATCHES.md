@@ -150,6 +150,8 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
   e versão documentada da ferramenta. Swagger gerado acompanha as mudanças funcionais.
 - Referências: PR #120 para o contrato/geração; demais instruções são particulares do fork.
 - Evidências: rules/AGENTS, template, Makefile e workflow de qualidade; CI geral mencionada acima.
+- Revisão documental em 2026-10-09: rule de persistência/Docker passou a referenciar
+  a política de imagem do fork, removendo a indicação conflitante da imagem upstream.
 - Limitações: regras não garantem implementação correta; ferramentas executadas e limitações
   devem constar no relatório. Não editar Swagger gerado manualmente.
 - Retirada: reavaliar por necessidade do fork; não remover automaticamente ao sincronizar.
@@ -173,6 +175,36 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 - Retirada: decisão explícita de retornar à distribuição oficial, com paridade de correções
   e transição de instalação documentadas.
 
+## F-013 — Protocolo interativo e seleção sem ambiguidade
+
+- Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
+- Problema/esperado: native-flow sem metadados, duplicação de `biz`, respostas com
+  nós indevidos e IDs de lista repetidos. Usar payloads diretos, um responsável pelos
+  nós, IDs únicos e validação antes de operações externas. Carrosséis escapam JSON.
+- Dependência: [cesar-carlos/whatsmeow](https://github.com/cesar-carlos/whatsmeow/commit/471f98b42c2042b8bec345ff06fa1d1f84528543),
+  baseada em `b572e5bcb92bbc285b68cb6d6540da3093330e04`, fixada por pseudo-version
+  no `replace` de go.mod. Licença MPL-2.0 preservada; manutenção descrita no fork da biblioteca.
+- Referências: whatsmeow #1235 (felps-dev), #1221 (gsdev-br), #1146 (TobyG74), Evolution Go issue #204.
+- Evidências: testes de nós/respostas/wrappers no módulo da biblioteca; testes de
+  builders e validação HTTP em `pkg/sendMessage`. Testes reproduziram falhas anteriores.
+- Mudança de validação: `rowId` explícito duplicado passa a retornar 400. Clientes devem
+  fornecer IDs únicos; IDs omitidos são gerados sem colisão. `buttonText` vazio usa "Ver Menu".
+- Limitações: atributos de protocolo observados em PRs não constituem especificação
+  oficial. Renderização/cliques em Android/iOS/Web e PIX continuam pendentes de homologação.
+- Retirada: upstream com nós/respostas equivalentes, preservação de contratos e testes
+  aprovados, seguido de homologação. Remover `replace` somente após comprovar essa paridade.
+
+## F-014 — Parsing de respostas interativas
+
+- Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
+- Problema/esperado: reconhecer respostas encapsuladas e IDs de seleção native-flow,
+  preservar o contrato `ButtonClick` e não mutar mensagens compartilhadas.
+- Referências: caminhos de resposta discutidos em whatsmeow #1221/#1235 e issue #204.
+- Evidências: `button_click_test.go`, formatos legado/template/lista/native-flow,
+  wrappers, JSON inválido, payload vazio e preservação da mensagem original.
+- Limitações: testes do parser não comprovam entrega pelos brokers nem interação real.
+- Retirada: comportamento oficial equivalente com testes de parsing e isolamento preservados.
+
 ## Cobertura da auditoria dos 31 commits
 
 | Commits | Itens |
@@ -193,7 +225,6 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 
 ## Pendências fora da primeira release
 
-Investigar listas/botões a partir da [issue #204](https://github.com/evolution-foundation/evolution-go/issues/204)
-e das propostas whatsmeow #1235/#1221. Não assumir que atualizar a biblioteca resolve
-automaticamente o envio. Imagens com proporção/EXIF (PR #212), interface móvel (PR #184)
-e outros PRs não foram incorporados nesta tarefa. Registrar novos itens quando houver implementação.
+F-013/F-014 implementam a adaptação de protocolo e parsing, com homologação de
+renderização/cliques ainda pendente. Imagens com proporção/EXIF (PR #212), previews
+(PR #207), interface móvel (PR #184) e Sender (PR #182) são entregas próprias.

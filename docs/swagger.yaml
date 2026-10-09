@@ -9090,10 +9090,10 @@ paths:
         Send an interactive list message (single-select) rendered as a tappable menu.
 
         Required body fields: `number`, `title`, `description`, `footerText`, `buttonText`, `sections`.
-        Each section must contain one or more `rows`. When `rowId` is omitted, the server generates a fallback ID.
+        Each section must contain one or more `rows`. When `rowId` is omitted, the server generates an ID unique within the message. Duplicate explicit IDs are rejected.
         When `buttonText` is empty, the server falls back to "Ver Menu".
 
-        Uses legacy `ListMessage` format (no ViewOnceMessage wrapper) so it renders on iOS, Android and WhatsApp Web.
+        Uses a direct `ListMessage` with business metadata. Client rendering requires device homologation.
       parameters:
       - description: Message data
         in: body

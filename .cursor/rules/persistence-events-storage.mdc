@@ -62,7 +62,9 @@ Não acoplar Gin ao broker. Guia: `docs/wiki/recursos-avancados/events-system.md
 
 ## Docker
 
-- Imagem: `evoapicloud/evolution-go`.
+- Imagem, tags, publicação e reversão do fork: seguir
+  [MAINTENANCE.md](../../docs/fork/MAINTENANCE.md). Não substituir a distribuição
+  própria pela imagem upstream ao adaptar Dockerfiles de outros PRs.
 - Compose local: app + Postgres; health `/server/ok`; porta `${SERVER_PORT:-8081}` no compose do repo.
 - Manter compatível com vars do `.env.example` raiz.
 - Guia narrativo: `docs/wiki/deploy-producao/docker-deployment.md` (ajustar mentalmente a porta).

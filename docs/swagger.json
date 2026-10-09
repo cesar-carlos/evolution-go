@@ -2967,7 +2967,7 @@
         },
         "/send/list": {
             "post": {
-                "description": "Send an interactive list message (single-select) rendered as a tappable menu.\n\nRequired body fields: `number`, `title`, `description`, `footerText`, `buttonText`, `sections`.\nEach section must contain one or more `rows`. When `rowId` is omitted, the server generates a fallback ID.\nWhen `buttonText` is empty, the server falls back to \"Ver Menu\".\n\nUses legacy `ListMessage` format (no ViewOnceMessage wrapper) so it renders on iOS, Android and WhatsApp Web.",
+                "description": "Send an interactive list message (single-select) rendered as a tappable menu.\n\nRequired body fields: `number`, `title`, `description`, `footerText`, `buttonText`, `sections`.\nEach section must contain one or more `rows`. When `rowId` is omitted, the server generates an ID unique within the message. Duplicate explicit IDs are rejected.\nWhen `buttonText` is empty, the server falls back to \"Ver Menu\".\n\nUses a direct `ListMessage` with business metadata. Client rendering requires device homologation.",
                 "consumes": [
                     "application/json"
                 ],
