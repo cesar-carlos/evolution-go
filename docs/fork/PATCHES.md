@@ -177,7 +177,7 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 
 ## F-013 — Protocolo interativo e seleção sem ambiguidade
 
-- Commits: `f5fd551`; [PR do fork #3](https://github.com/cesar-carlos/evolution-go/pull/3).
+- Commits: `f5fd551`, complemento `cdc7388`; [PR do fork #3](https://github.com/cesar-carlos/evolution-go/pull/3).
 - Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
 - Problema/esperado: native-flow sem metadados, duplicação de `biz`, respostas com
   nós indevidos e IDs de lista repetidos. Usar payloads diretos, um responsável pelos
@@ -231,7 +231,7 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 
 ## F-016 — Preview de links com fallback, contexto e fetch limitado
 
-- Commits: `7f2f906`; [PR do fork #5](https://github.com/cesar-carlos/evolution-go/pull/5).
+- Commits: `7f2f906`, regressões `cdc7388`; [PR do fork #5](https://github.com/cesar-carlos/evolution-go/pull/5).
 - Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
 - Problema/esperado: preview pequeno, metadados explícitos sobrescritos, URLs relativas
   incorretas após redirects, EXIF perdido e operações sem cancelamento. Preparar uma
@@ -265,7 +265,7 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 
 ## F-018 — Sender com autenticação de instância e recursos limitados
 
-- Commits: `60d68dd`, `6dd14bf`, `39b4001`; [PR do fork #7](https://github.com/cesar-carlos/evolution-go/pull/7)
+- Commits: `60d68dd`, `6dd14bf`, `39b4001`, regressões `cdc7388`; [PR do fork #7](https://github.com/cesar-carlos/evolution-go/pull/7)
   e [complemento #8](https://github.com/cesar-carlos/evolution-go/pull/8).
 - Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
 - Problema/esperado: interface de chat ausente. Adaptação independente de Evolution
@@ -323,4 +323,8 @@ dos heads de 2026-10-09. O mapa dos PRs, diferenças novas e verificações de o
 está em [UPSTREAM-CONTRIBUTIONS.md](UPSTREAM-CONTRIBUTIONS.md). Os demais ajustes
 de EXIF, Manager e Sender já estavam integrados e foram preservados.
 O fork da biblioteca passou build, vet, testes e race detector em Docker Go 1.25.0.
+A integração `cdc7388`, preparada para `0.7.2-cesar.3`, também passou build, vet,
+testes e race detector completos do projeto, regressões da biblioteca fixada,
+12 guards de publicação e cinco testes Playwright/Edge. A CI revalida PostgreSQL
+isolado e Chromium Linux. A base oficial continua em `0.7.2`.
 A homologação Android/iOS/Web continua pendente; não houve envio real nesta revisão.
