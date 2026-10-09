@@ -97,8 +97,8 @@ func (s *sendHandler) SendLink(ctx *gin.Context) {
 		return
 	}
 
-	var data *send_service.LinkStruct
-	err := ctx.ShouldBindBodyWithJSON(&data)
+	data := new(send_service.LinkStruct)
+	err := ctx.ShouldBindBodyWithJSON(data)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -114,7 +114,7 @@ func (s *sendHandler) SendLink(ctx *gin.Context) {
 		return
 	}
 
-	message, err := s.sendMessageService.SendLink(data, instance)
+	message, err := s.sendMessageService.SendLink(ctx.Request.Context(), data, instance)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

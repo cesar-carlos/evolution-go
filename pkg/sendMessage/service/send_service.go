@@ -30,13 +30,12 @@ import (
 	waBinary "go.mau.fi/whatsmeow/binary"
 	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
-	"golang.org/x/net/html"
 	"google.golang.org/protobuf/proto"
 )
 
 type SendService interface {
 	SendText(data *TextStruct, instance *instance_model.Instance) (*MessageSendStruct, error)
-	SendLink(data *LinkStruct, instance *instance_model.Instance) (*MessageSendStruct, error)
+	SendLink(ctx context.Context, data *LinkStruct, instance *instance_model.Instance) (*MessageSendStruct, error)
 	SendMediaUrl(data *MediaStruct, instance *instance_model.Instance) (*MessageSendStruct, error)
 	SendMediaFile(data *MediaStruct, fileData []byte, instance *instance_model.Instance) (*MessageSendStruct, error)
 	SendPoll(data *PollStruct, instance *instance_model.Instance) (*MessageSendStruct, error)
@@ -52,10 +51,11 @@ type SendService interface {
 }
 
 type sendService struct {
-	clientPointer    map[string]*whatsmeow.Client
-	whatsmeowService whatsmeow_service.WhatsmeowService
-	config           *config.Config
-	loggerWrapper    *logger_wrapper.LoggerManager
+	clientPointer         map[string]*whatsmeow.Client
+	whatsmeowService      whatsmeow_service.WhatsmeowService
+	config                *config.Config
+	loggerWrapper         *logger_wrapper.LoggerManager
+	linkPreviewHTTPClient *http.Client
 }
 
 type SendDataStruct struct {
@@ -652,145 +652,6 @@ func (s *sendService) sendTextWithRetry(data *TextStruct, instance *instance_mod
 	}
 
 	return nil, fmt.Errorf("failed to send text after %d attempts", maxRetries)
-}
-
-func fetchLinkMetadata(url string) (string, string, string, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return "", "", "", err
-	}
-	defer resp.Body.Close()
-
-	doc, err := html.Parse(resp.Body)
-	if err != nil {
-		return "", "", "", err
-	}
-
-	var title, description, imgURL string
-
-	var f func(*html.Node)
-	f = func(n *html.Node) {
-		if n.Type == html.ElementNode {
-			if n.Data == "title" && n.FirstChild != nil {
-				title = n.FirstChild.Data
-			}
-			if n.Data == "meta" {
-				var property, content string
-				for _, attr := range n.Attr {
-					if attr.Key == "property" || attr.Key == "name" {
-						property = attr.Val
-					}
-					if attr.Key == "content" {
-						content = attr.Val
-					}
-				}
-
-				if (property == "description" || property == "og:description") && content != "" {
-					description = content
-				}
-
-				if property == "og:image" && content != "" {
-					imgURL = content
-				}
-			}
-		}
-
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			f(c)
-		}
-	}
-
-	f(doc)
-
-	return title, description, imgURL, nil
-}
-
-func (s *sendService) SendLink(data *LinkStruct, instance *instance_model.Instance) (*MessageSendStruct, error) {
-	return s.sendLinkWithRetry(data, instance, 3)
-}
-
-func (s *sendService) sendLinkWithRetry(data *LinkStruct, instance *instance_model.Instance, maxRetries int) (*MessageSendStruct, error) {
-	for attempt := 1; attempt <= maxRetries; attempt++ {
-		s.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] SendLink attempt %d/%d", instance.Id, attempt, maxRetries)
-
-		_, err := s.ensureClientConnectedWithRetry(instance.Id, 2)
-		if err != nil {
-			if attempt == maxRetries {
-				return nil, err
-			}
-			continue
-		}
-
-		matchedText := findURL(data.Text)
-
-		if matchedText != "" {
-			title, description, imgUrl, err := fetchLinkMetadata(matchedText)
-			if err != nil {
-				if attempt == maxRetries {
-					return nil, err
-				}
-				continue
-			}
-
-			data.Title = title
-			data.Description = description
-			data.ImgUrl = imgUrl
-		}
-
-		var fileData []byte
-		if data.ImgUrl != "" {
-			resp, err := http.Get(data.ImgUrl)
-			if err != nil {
-				if attempt == maxRetries {
-					return nil, err
-				}
-				continue
-			}
-			defer resp.Body.Close()
-			fileData, _ = io.ReadAll(resp.Body)
-		}
-
-		previewType := waE2E.ExtendedTextMessage_VIDEO
-		msg := &waE2E.Message{
-			ExtendedTextMessage: &waE2E.ExtendedTextMessage{
-				Text:          &data.Text,
-				Title:         &data.Title,
-				MatchedText:   &matchedText,
-				JPEGThumbnail: fileData,
-				Description:   &data.Description,
-				PreviewType:   &previewType,
-			},
-		}
-
-		message, err := s.SendMessage(instance, msg, "ExtendedTextMessage", &SendDataStruct{
-			Id:           data.Id,
-			Number:       data.Number,
-			Quoted:       data.Quoted,
-			Delay:        data.Delay,
-			MentionAll:   data.MentionAll,
-			MentionedJID: data.MentionedJID,
-			FormatJid:    data.FormatJid,
-		})
-
-		if err != nil {
-			// Check if it's a client disconnection error
-			if strings.Contains(err.Error(), "client disconnected") || strings.Contains(err.Error(), "no active session") {
-				s.loggerWrapper.GetLogger(instance.Id).LogWarn("[%s] SendLink failed due to disconnection on attempt %d/%d: %v", instance.Id, attempt, maxRetries, err)
-				if attempt < maxRetries {
-					waitTime := time.Duration(attempt) * time.Second
-					s.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Waiting %v before retry", instance.Id, waitTime)
-					time.Sleep(waitTime)
-					continue
-				}
-			}
-			return nil, err
-		}
-
-		s.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] SendLink successful on attempt %d", instance.Id, attempt)
-		return message, nil
-	}
-
-	return nil, fmt.Errorf("failed to send link after %d attempts", maxRetries)
 }
 
 type ConvertAudio struct {
@@ -1948,9 +1809,22 @@ func (s *sendService) SendList(data *ListStruct, instance *instance_model.Instan
 }
 
 func (s *sendService) SendMessage(instance *instance_model.Instance, msg *waE2E.Message, messageType string, data *SendDataStruct) (*MessageSendStruct, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	return s.sendMessageContext(ctx, instance, msg, messageType, data)
+}
+
+func (s *sendService) sendMessageContext(ctx context.Context, instance *instance_model.Instance, msg *waE2E.Message, messageType string, data *SendDataStruct) (*MessageSendStruct, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	client, err := s.ensureSendClient(ctx, instance.Id)
+	if err != nil {
+		return nil, err
+	}
 	s.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] SendMessage called for number: %s, type: %s", instance.Id, data.Number, messageType)
 
-	recipient, err := s.validateAndCheckUserExists(data.Number, data.FormatJid, &data.Quoted.MessageID, &data.Quoted.MessageID, instance)
+	recipient, err := s.validateSendRecipient(ctx, client, data, instance)
 	if err != nil {
 		s.loggerWrapper.GetLogger(instance.Id).LogError("[%s] Error validating message fields or user check: %v", instance.Id, err)
 		return nil, err
@@ -1960,7 +1834,7 @@ func (s *sendService) SendMessage(instance *instance_model.Instance, msg *waE2E.
 
 	var message string
 	if data.Id == "" {
-		message = s.clientPointer[instance.Id].GenerateMessageID()
+		message = client.GenerateMessageID()
 	} else {
 		message = data.Id
 	}
@@ -1971,14 +1845,16 @@ func (s *sendService) SendMessage(instance *instance_model.Instance, msg *waE2E.
 			media = "audio"
 		}
 
-		err := s.clientPointer[instance.Id].SendChatPresence(context.Background(), recipient, types.ChatPresence("composing"), types.ChatPresenceMedia(media))
+		err := client.SendChatPresence(ctx, recipient, types.ChatPresence("composing"), types.ChatPresenceMedia(media))
 		if err != nil {
 			return nil, err
 		}
 
-		time.Sleep(time.Duration(data.Delay) * time.Millisecond)
+		if err := waitSendDelay(ctx, time.Duration(data.Delay)*time.Millisecond); err != nil {
+			return nil, err
+		}
 
-		err = s.clientPointer[instance.Id].SendChatPresence(context.Background(), recipient, types.ChatPresence("paused"), types.ChatPresenceMedia(media))
+		err = client.SendChatPresence(ctx, recipient, types.ChatPresence("paused"), types.ChatPresenceMedia(media))
 		if err != nil {
 			return nil, err
 		}
@@ -2231,7 +2107,7 @@ func (s *sendService) SendMessage(instance *instance_model.Instance, msg *waE2E.
 	// Only try to get participants for actual groups, not newsletters
 	if isGroup && !isNewsletter {
 		if data.MentionAll {
-			groupInfo, err := s.clientPointer[instance.Id].GetGroupInfo(context.Background(), recipient)
+			groupInfo, err := client.GetGroupInfo(ctx, recipient)
 			if err != nil {
 				return nil, err
 			}
@@ -2272,7 +2148,7 @@ func (s *sendService) SendMessage(instance *instance_model.Instance, msg *waE2E.
 		sendExtra.AdditionalNodes = data.AdditionalNodes
 	}
 
-	response, err := s.clientPointer[instance.Id].SendMessage(context.Background(), recipient, msg, sendExtra)
+	response, err := client.SendMessage(ctx, recipient, msg, sendExtra)
 	if err != nil {
 		s.loggerWrapper.GetLogger(instance.Id).LogError("[%s] Error sending message: %v", instance.Id, err)
 		return nil, err
@@ -2283,7 +2159,7 @@ func (s *sendService) SendMessage(instance *instance_model.Instance, msg *waE2E.
 	messageInfo := types.MessageInfo{
 		MessageSource: types.MessageSource{
 			Chat:     recipient,
-			Sender:   *s.clientPointer[instance.Id].Store.ID,
+			Sender:   client.Store.GetJID(),
 			IsFromMe: true,
 			IsGroup:  isGroup,
 		},
@@ -2337,15 +2213,15 @@ func (s *sendService) SendMessage(instance *instance_model.Instance, msg *waE2E.
 		sticker := msg.GetStickerMessage()
 
 		if img != nil {
-			data, err = s.clientPointer[instance.Id].Download(context.Background(), img)
+			data, err = client.Download(ctx, img)
 		} else if audio != nil {
-			data, err = s.clientPointer[instance.Id].Download(context.Background(), audio)
+			data, err = client.Download(ctx, audio)
 		} else if document != nil {
-			data, err = s.clientPointer[instance.Id].Download(context.Background(), document)
+			data, err = client.Download(ctx, document)
 		} else if video != nil {
-			data, err = s.clientPointer[instance.Id].Download(context.Background(), video)
+			data, err = client.Download(ctx, video)
 		} else if sticker != nil {
-			data, err = s.clientPointer[instance.Id].Download(context.Background(), sticker)
+			data, err = client.Download(ctx, sticker)
 
 			webpReader := bytes.NewReader(data)
 			img, err := webp.Decode(webpReader)
@@ -2886,9 +2762,10 @@ func NewSendService(
 	loggerWrapper *logger_wrapper.LoggerManager,
 ) SendService {
 	return &sendService{
-		clientPointer:    clientPointer,
-		whatsmeowService: whatsmeowService,
-		config:           config,
-		loggerWrapper:    loggerWrapper,
+		clientPointer:         clientPointer,
+		whatsmeowService:      whatsmeowService,
+		config:                config,
+		loggerWrapper:         loggerWrapper,
+		linkPreviewHTTPClient: newLinkPreviewHTTPClient(config.LinkPreviewAllowPrivate),
 	}
 }
