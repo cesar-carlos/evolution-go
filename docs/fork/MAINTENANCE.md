@@ -97,8 +97,12 @@ não representa uma release oficial. Tags publicadas não são movidas/reutiliza
    Na primeira publicação, defina a visibilidade do pacote como pública em
    **Package settings → Change visibility → Public**. Essa configuração do GHCR
    é independente da visibilidade do repositório; pode exigir a interface GitHub.
-7. Verifique pull anônimo pelo digest, manifesto e arquiteturas; registre a evidência
-   na descrição da release. A primeira publicação só está concluída após essa verificação.
+7. Verifique pull anônimo pelo digest, manifesto e arquiteturas. Use um diretório
+   temporário novo com apenas `config.json` contendo `{}` e execute
+   `docker --config <diretorio> pull <imagem>@<digest>`, preservando sua configuração
+   Docker habitual. Registre a evidência em `docs/fork/releases/<tag>.json` e anexe
+   esse arquivo à GitHub Release, sem sobrescrever assets existentes. A primeira
+   publicação só está concluída após essa verificação.
 
 A CI roda em PRs e pushes na `main`; imagens são publicadas apenas por tags
 `v*-cesar.*` válidas. A formatação em releases compara os arquivos alterados com a
@@ -117,7 +121,13 @@ Ao reexecutar o mesmo run/tag, o workflow verifica os aliases existentes. Só re
 imagem com a mesma revisão, versão, base e arquiteturas. Aliases divergentes,
 autenticação inválida e falhas de consulta interrompem o processo. Uma versão
 existente de outro conteúdo jamais autoriza sobrescrita. Release existente deve
-ter notas idênticas; alterações editoriais posteriores exigem revisão consciente.
+ter notas idênticas, normalizando apenas CRLF/LF e quebras de linha finais do
+cliente/API; alterações editoriais posteriores exigem revisão consciente.
+
+A tag inicial `v0.7.2-cesar.1` preserva o comparador original `gh --jq`/`cmp`.
+Suas notas foram normalizadas sem LF final para permitir a reexecução desse
+workflow imutável. O comparador da `main` lê JSON; a regressão e a verificação
+estão registradas no inventário e no [registro da primeira release](releases/v0.7.2-cesar.1.json).
 
 Se a imagem foi publicada mas a release falhou, corrija a causa e reexecute o job/run
 original sem mover a tag. Se o código da própria release precisar mudar, incremente

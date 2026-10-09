@@ -133,13 +133,30 @@ def output(values):
                 handle.write(key + "=" + value + "\n")
 
 
+def verify_release_notes(existing, expected):
+    if not isinstance(existing, str):
+        raise ValueError("Existing release must contain a text body")
+    # GitHub/CLI line endings do not change the published Markdown content.
+    normalize = lambda value: value.replace("\r\n", "\n").rstrip("\n")
+    if normalize(existing) != normalize(expected):
+        raise ValueError("Existing release notes differ from the verified publication")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("validate", "fetch-base", "state", "verify", "notes"))
+    parser.add_argument("command", choices=("validate", "fetch-base", "state", "verify", "notes", "compare-notes"))
     parser.add_argument("--tag")
     parser.add_argument("--commit")
     parser.add_argument("--digest")
+    parser.add_argument("--existing-notes")
+    parser.add_argument("--expected-notes")
     args = parser.parse_args()
+    if args.command == "compare-notes":
+        if not args.existing_notes or not args.expected_notes:
+            raise ValueError("Notes comparison requires both existing JSON and expected Markdown")
+        existing = json.loads(Path(args.existing_notes).read_text(encoding="utf-8"))
+        verify_release_notes(existing.get("body"), Path(args.expected_notes).read_text(encoding="utf-8"))
+        return
     base = read_base()
     version = Path("VERSION").read_text(encoding="utf-8").strip()
 

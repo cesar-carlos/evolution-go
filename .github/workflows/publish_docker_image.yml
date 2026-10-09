@@ -132,8 +132,8 @@ jobs:
       - name: Create release after successful image publication
         run: |
           python3 scripts/release/release.py notes --commit "$COMMIT" --digest "$DIGEST" > release-notes.md
-          if gh release view "$RELEASE_TAG" --json body --jq .body > existing-notes.md 2> release-error.txt; then
-            cmp existing-notes.md release-notes.md
+          if gh release view "$RELEASE_TAG" --json body > existing-notes.json 2> release-error.txt; then
+            python3 scripts/release/release.py compare-notes --existing-notes existing-notes.json --expected-notes release-notes.md
           elif grep -qi 'release not found' release-error.txt; then
             gh release create "$RELEASE_TAG" --verify-tag --title "$RELEASE_TAG (fork cesar-carlos)" --notes-file release-notes.md --latest=false
           else

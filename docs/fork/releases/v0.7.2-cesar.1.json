@@ -1,0 +1,42 @@
+{
+  "version": "0.7.2-cesar.1",
+  "tag": "v0.7.2-cesar.1",
+  "date": "2026-10-09",
+  "commit": "499a405d682ece94cf254ad0fa84bc481d92496a",
+  "upstream": {
+    "repository": "evolution-foundation/evolution-go",
+    "tag": "0.7.2",
+    "sha": "9337afc47e10b86cc896a6f432240e40fee95dd1"
+  },
+  "image": "ghcr.io/cesar-carlos/evolution-go",
+  "digest": "sha256:8f1771b2dd75e7f07b57d42550d6373d5037abcad3b0197f50154a648fa218ae",
+  "platforms": ["linux/amd64", "linux/arm64"],
+  "aliases": ["0.7.2-cesar.1", "sha-499a405d682ece94cf254ad0fa84bc481d92496a"],
+  "latest_alias_published": false,
+  "release": "https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.2-cesar.1",
+  "workflow": "https://github.com/cesar-carlos/evolution-go/actions/runs/37926532792",
+  "verification": {
+    "initial_workflow_attempt": 1,
+    "initial_workflow_result": "success",
+    "retry_workflow_attempt": 2,
+    "retry_workflow_result": "success",
+    "retry_build_skipped": true,
+    "retry_preserved_digest_and_existing_release": true,
+    "quality": ["go mod verify", "go build ./...", "go vet ./...", "go test -timeout 5m ./...", "go test -race -timeout 5m ./..."],
+    "runtime_smoke_checks": ["linux/amd64", "linux/arm64"],
+    "compiled_version_ldflags": "-X main.version=0.7.2-cesar.1",
+    "resources": ["/app/server", "/app/VERSION", "/app/manager/dist/index.html", "ffmpeg", "pdftoppm"],
+    "anonymous_pull": true,
+    "anonymous_pull_command": "docker --config build/fork-anonymous-docker pull ghcr.io/cesar-carlos/evolution-go@sha256:8f1771b2dd75e7f07b57d42550d6373d5037abcad3b0197f50154a648fa218ae",
+    "anonymous_config": "Temporary directory containing only config.json with {}",
+    "version_and_sha_aliases_match_digest": true,
+    "existing_version_rejects_another_revision": true,
+    "initial_tag_notes_normalized_without_trailing_lf": true
+  },
+  "limitations": {
+    "real_whatsapp_homologation_executed": false,
+    "lists_and_buttons_protocol_fixed": false,
+    "production_deployed": false,
+    "previous_fork_release": null
+  }
+}
