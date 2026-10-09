@@ -205,6 +205,20 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 - Limitações: testes do parser não comprovam entrega pelos brokers nem interação real.
 - Retirada: comportamento oficial equivalente com testes de parsing e isolamento preservados.
 
+## F-015 — Dimensões, EXIF e limites de miniaturas
+
+- Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
+- Problema/esperado: imagens sem dimensões são recortadas nos clientes; miniaturas
+  ignoram rotação/espelhamento. Preencher dimensões nos caminhos de mídia/status/
+  botões/carrosséis e aplicar EXIF às miniaturas, com limite antes de decodificar pixels.
+- Referência: Evolution Go #212, mediam4kers; helpers adaptados com validação adicional.
+- Evidências: testes de dimensões, orientações 1–8 com pixels assimétricos, EXIF big/
+  little endian, tipo/count/offset inválidos, limite de bitmap e seeds de fuzzing.
+- Limitações: orientação visual no WhatsApp e todos os formatos reais exigem homologação.
+  Imagem inválida mantém envio sem dimensões/miniatura, conforme fallback anterior.
+- Retirada: suporte oficial equivalente em todos os caminhos e limites de recursos,
+  com regressões aprovadas e homologação registrada.
+
 ## Cobertura da auditoria dos 31 commits
 
 | Commits | Itens |

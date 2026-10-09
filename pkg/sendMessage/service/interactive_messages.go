@@ -217,7 +217,8 @@ func prepareInteractiveHeader(ctx context.Context, client *whatsmeow.Client, ima
 	}
 	header := &waE2E.InteractiveMessage_Header{HasMediaAttachment: proto.Bool(true)}
 	if kind == whatsmeow.MediaImage {
-		header.Media = &waE2E.InteractiveMessage_Header_ImageMessage{ImageMessage: &waE2E.ImageMessage{URL: proto.String(uploaded.URL), DirectPath: proto.String(uploaded.DirectPath), MediaKey: uploaded.MediaKey, Mimetype: proto.String(mimetype.Detect(raw).String()), FileEncSHA256: uploaded.FileEncSHA256, FileSHA256: uploaded.FileSHA256, FileLength: proto.Uint64(uint64(len(raw))), JPEGThumbnail: makeJPEGThumbnail(raw, 72)}}
+		width, height := imageDimensions(raw)
+		header.Media = &waE2E.InteractiveMessage_Header_ImageMessage{ImageMessage: &waE2E.ImageMessage{URL: proto.String(uploaded.URL), DirectPath: proto.String(uploaded.DirectPath), MediaKey: uploaded.MediaKey, Mimetype: proto.String(mimetype.Detect(raw).String()), FileEncSHA256: uploaded.FileEncSHA256, FileSHA256: uploaded.FileSHA256, FileLength: proto.Uint64(uint64(len(raw))), JPEGThumbnail: makeJPEGThumbnail(raw, 72), Width: width, Height: height}}
 	} else {
 		header.Media = &waE2E.InteractiveMessage_Header_VideoMessage{VideoMessage: &waE2E.VideoMessage{URL: proto.String(uploaded.URL), DirectPath: proto.String(uploaded.DirectPath), MediaKey: uploaded.MediaKey, Mimetype: proto.String("video/mp4"), FileEncSHA256: uploaded.FileEncSHA256, FileSHA256: uploaded.FileSHA256, FileLength: proto.Uint64(uint64(len(raw)))}}
 	}
