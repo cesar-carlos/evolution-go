@@ -349,7 +349,8 @@ compatibilidade; publicação aprovada não representa comprovação de renderiz
 
 ## F-019 — Store de autenticação compartilhado e recuperável
 
-- Estado: `local`; implementação na branch de integração, merge/CI ainda pendentes.
+- Estado: `local`; armazenamento integrado pelo PR #12, commit `0a50034`.
+- Validação: CI [37974834132](https://github.com/cesar-carlos/evolution-go/actions/runs/37974834132) aprovada (Go/race/PostgreSQL e navegador).
 - Comparação: 2026-10-09, base oficial `0.7.2`, issue #186.
 - Referências: #117 (guilhermeCassettari e Ay0rus), #194, #174/#178 e #206;
   integração seletiva descrita em [UPSTREAM-CONTRIBUTIONS.md](UPSTREAM-CONTRIBUTIONS.md).
@@ -367,3 +368,30 @@ compatibilidade; publicação aprovada não representa comprovação de renderiz
   encerramento completo das sessões pertencem à entrega de ciclo de vida.
 - Retirada: store oficial com reutilização, recuperação, contextos e ownership
   equivalentes, comprovados pelas regressões SQLite/PostgreSQL.
+## F-020 — Ciclo de conexão por instância e encerramento dos workers
+
+- Estado: `local`; branch de integração, merge/CI pendentes.
+- Comparação: 2026-10-09, base oficial `0.7.2`; issue #186 e revisão do #200.
+  #200/#131 são referências de defeitos evitados, não merges incorporados.
+- Problema/esperado: mapas/canais compartilhados permitiam corridas, workers órfãos
+  e reconexão após parada intencional. Serializar operações por instância e impedir
+  callbacks/limpeza antigos de afetar uma substituta.
+- Implementação: registro privado, identidade por execução, snapshots de settings,
+  cancelamento difundido, conclusão explícita e reconexões coalescidas/limitadas.
+  Transporte permanece vivo para logout depois de parar os workers. QR/passkey têm
+  sinal de disponibilidade; polling não cria ciclos de QR após expiração.
+  DeviceProps é clonado por cliente, evitando mutação global entre instâncias.
+- Evidências: session_lifecycle_test.go cobre 32 inícios/paradas, isolamento,
+  workers, substituição, exclusão durante startup, cinco retries, cancelamento,
+  shutdown, espera de pareamento e ordem worker/logout/transporte.
+  session_qr_test.go verifica cancelamento da rotação, expiração sem reinício e
+  preservação da cerimônia passkey ativa. Build/vet/testes completos/race Docker,
+  PostgreSQL/SQLite reais, biblioteca, navegador e 12 guards de publicação passaram.
+  Workflows conferidos com actionlint 1.7.12; CI do PR ainda pendente.
+- Contratos: endpoints/payloads preservados. Semântica corrigida de parada descrita
+  no [guia](MAINTENANCE.md#sessões-e-parada-de-instâncias); sem novas anotações Swagger.
+- Limitações: pareamento, reconexão e passkey reais pendentes; nenhum envio real nos
+  testes. Slots de instâncias removidas conservam identidade/token em memória até
+  o shutdown para rejeitar trabalho atrasado; não conservam clientes/pools ativos.
+- Retirada: ciclo oficial com isolamento, ownership e retries equivalentes,
+  comprovado pelas regressões do fork, incluindo ausência de reinício intencional.

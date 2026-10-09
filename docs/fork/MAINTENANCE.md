@@ -162,3 +162,26 @@ reconexões e entrega de eventos; registre resultados e eventuais regressões.
 Referências: [Git merge](https://git-scm.com/docs/git-merge),
 [sincronizar forks](https://docs.github.com/en/pull-requests/how-tos/work-with-forks/syncing-a-fork),
 [GHCR](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry).
+
+## Sessões e parada de instâncias
+
+O serviço Whatsmeow é dono do registro sincronizado e dos workers de cada execução.
+Consumidores usam GetClient/WaitClient; não leem nem escrevem os mapas legados dos
+construtores. Uma parada manual conserva a sessão persistida e não reconecta.
+Logout/exclusão tentam desautenticar o cliente conectado antes de desligar o
+transporte. Exclusão bloqueia um início atrasado com o mesmo token; recriação com
+novo token é permitida. Nenhuma dessas operações fecha o authDB compartilhado.
+
+Falha transitória com sessão válida permite cinco tentativas automáticas, com
+backoff de 1, 2, 4, 8 e 16 segundos e jitter de até 20%. Sucesso exige Connected,
+não apenas abrir o WebSocket. Esgotamento ou expiração do QR deixam a instância
+desconectada; use connect/reconnect explicitamente para tentar novamente. Consultar
+QR não reinicia um pareamento expirado. Pair aguarda QR/passkey disponível sem uma
+espera fixa. Uma cerimônia passkey em andamento continua protegida durante sua
+janela atual de cinco minutos; pareamento real continua pendente de homologação.
+
+No shutdown, novos inícios são bloqueados, HTTP é drenado (até 10 segundos), as
+execuções e reconexões são canceladas/aguardadas e o store SQLite é fechado antes
+dos bancos do entrypoint. O orçamento total é 30 segundos; encerramento incompleto
+é registrado. O PostgreSQL mantém o pool configurado no entrypoint; SQLite de
+sessões usa dbdata/main.db, WAL e uma conexão, separado de users.db.

@@ -1,4 +1,4 @@
-# Contribuições da revisão de mensagens interativas
+# Contribuições e revisões upstream
 
 Revisão dos heads de 2026-10-09. O código integrado e as condições de retirada
 continuam no [inventário](PATCHES.md); este arquivo registra os complementos
@@ -83,3 +83,19 @@ Heads serão revalidados antes da contribuição ao #117. A revisão isolada rep
 falha permanente no #206 e corrida no #131. Os helpers de #117/#194 recuperaram após
 falha e compartilharam o container em 32 chamadas. Isso não valida o ciclo completo,
 WhatsApp real, nem implica aprovação do mantenedor.
+### Integração no fork
+
+F-019 foi integrado seletivamente pelo [PR #12](https://github.com/cesar-carlos/evolution-go/pull/12),
+commit `0a50034`, com CI e PostgreSQL real aprovados. Foram aproveitados os comportamentos
+de recuperação/compartilhamento do #117/#194 e reutilização do handle do #174/#178/#206;
+nenhum desses PRs foi mesclado integralmente. #102/#131/#200 permanecem referências
+revisadas, sem incorporar suas implementações. F-020 trata o ciclo de vida separadamente.
+
+A integração de testes revelou que a dependência fixada consulta nomes de tabelas
+em todos os schemas durante Upgrade. O fixture PostgreSQL passou a criar um banco
+temporário próprio (role de testes com CREATEDB), evitando interferência com Sender.
+Isso não altera o schema de produção nem atualiza dependências.
+
+A adaptação ao head do #117 está em preparação separada, preservando módulo e
+submódulo originais. O endereço do patch, resultados nessa base e comentário serão
+registrados após a validação; a autorização de envio foi dada nesta tarefa.

@@ -95,7 +95,7 @@ type MessageSendStruct struct {
 }
 
 func (m *messageService) ensureClientConnected(instanceId string) (*whatsmeow.Client, error) {
-	client := m.clientPointer[instanceId]
+	client := m.whatsmeowService.GetClient(instanceId)
 	m.loggerWrapper.GetLogger(instanceId).LogInfo("[%s] Checking client connection status - Client exists: %v", instanceId, client != nil)
 
 	if client == nil {
@@ -107,9 +107,11 @@ func (m *messageService) ensureClientConnected(instanceId string) (*whatsmeow.Cl
 		}
 
 		m.loggerWrapper.GetLogger(instanceId).LogInfo("[%s] Instance started, waiting 2 seconds...", instanceId)
-		time.Sleep(2 * time.Second)
+		if _, err := m.whatsmeowService.WaitClient(context.Background(), instanceId); err != nil {
+			return nil, err
+		}
 
-		client = m.clientPointer[instanceId]
+		client = m.whatsmeowService.GetClient(instanceId)
 		m.loggerWrapper.GetLogger(instanceId).LogInfo("[%s] Checking new client - Exists: %v, Connected: %v",
 			instanceId,
 			client != nil,

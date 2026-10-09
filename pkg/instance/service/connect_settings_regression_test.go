@@ -99,6 +99,8 @@ func (s *connectSettingsRuntimeStub) UpdateInstanceSettings(string) error {
 	return s.err
 }
 
+func (s *connectSettingsRuntimeStub) GetClient(string) *whatsmeow.Client { return &whatsmeow.Client{} }
+
 func (s *connectSettingsRuntimeStub) StartClient(*whatsmeow_service.ClientData) {
 	s.startCalls.Add(1)
 }

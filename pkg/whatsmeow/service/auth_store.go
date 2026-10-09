@@ -158,5 +158,8 @@ func (s *authStore) close(ctx context.Context) error {
 // Shutdown releases the owned authentication store. The PostgreSQL pool is
 // borrowed from main and is closed there after service shutdown.
 func (w whatsmeowService) Shutdown(ctx context.Context) error {
+	if err := w.sessions.shutdown(ctx); err != nil {
+		return err
+	}
 	return w.authStore.close(ctx)
 }

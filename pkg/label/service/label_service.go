@@ -3,7 +3,6 @@ package label_service
 import (
 	"context"
 	"errors"
-	"time"
 
 	instance_model "github.com/evolution-foundation/evolution-go/pkg/instance/model"
 	label_model "github.com/evolution-foundation/evolution-go/pkg/label/model"
@@ -50,7 +49,7 @@ type EditLabelStruct struct {
 }
 
 func (l *labelService) ensureClientConnected(instanceId string) (*whatsmeow.Client, error) {
-	client := l.clientPointer[instanceId]
+	client := l.whatsmeowService.GetClient(instanceId)
 	l.loggerWrapper.GetLogger(instanceId).LogInfo("[%s] Checking client connection status - Client exists: %v", instanceId, client != nil)
 
 	if client == nil {
@@ -62,9 +61,11 @@ func (l *labelService) ensureClientConnected(instanceId string) (*whatsmeow.Clie
 		}
 
 		l.loggerWrapper.GetLogger(instanceId).LogInfo("[%s] Instance started, waiting 2 seconds...", instanceId)
-		time.Sleep(2 * time.Second)
+		if _, err := l.whatsmeowService.WaitClient(context.Background(), instanceId); err != nil {
+			return nil, err
+		}
 
-		client = l.clientPointer[instanceId]
+		client = l.whatsmeowService.GetClient(instanceId)
 		l.loggerWrapper.GetLogger(instanceId).LogInfo("[%s] Checking new client - Exists: %v, Connected: %v",
 			instanceId,
 			client != nil,

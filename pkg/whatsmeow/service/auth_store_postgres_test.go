@@ -23,12 +23,15 @@ func TestAuthStorePostgresReusesBoundedPool(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer admin.Close()
+	// The pinned migration helper checks table names across all schemas.
+	// Use a temporary database, not a schema alongside Sender tables. The
+	// isolated test role therefore needs CREATEDB (CI uses PostgreSQL 16).
 	schema := fmt.Sprintf("auth_store_%d", time.Now().UnixNano())
-	if _, err := admin.ExecContext(ctx, "CREATE SCHEMA "+schema); err != nil {
+	if _, err := admin.ExecContext(ctx, "CREATE DATABASE "+schema); err != nil {
 		t.Fatal(err)
 	}
 	defer func() {
-		if _, err := admin.ExecContext(context.Background(), "DROP SCHEMA "+schema+" CASCADE"); err != nil {
+		if _, err := admin.ExecContext(context.Background(), "DROP DATABASE "+schema+" WITH (FORCE)"); err != nil {
 			t.Error(err)
 		}
 	}()
@@ -37,7 +40,7 @@ func TestAuthStorePostgresReusesBoundedPool(t *testing.T) {
 		t.Fatal("test DSN must be a PostgreSQL URL")
 	}
 	q := u.Query()
-	q.Set("search_path", schema)
+	u.Path = "/" + schema
 	q.Set("application_name", schema)
 	u.RawQuery = q.Encode()
 	db, err := sql.Open("postgres", u.String())
