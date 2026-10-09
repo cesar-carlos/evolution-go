@@ -21,6 +21,15 @@ sem produzir uma resposta de clique: não inferir confirmação onde ela não ex
 
 ## Homologação pendente
 
+Previews respeitam campos explícitos e permitem texto quando a página/imagem/upload
+falha. Cancelar a requisição interrompe o trabalho; falha de preview não repete o
+envio. O orçamento total do link é 45 s, com até 20 s para preparar preview, limites
+de 4 MiB de HTML, 8 MiB de imagem e 25 milhões de pixels antes da decodificação.
+Destinos privados/locais são bloqueados inclusive após redirects e DNS; instalações
+que precisam deles devem configurar `LINK_PREVIEW_ALLOW_PRIVATE=true` conscientemente.
+URLs com credenciais e esquemas diferentes de HTTP(S) não são usadas para preview.
+Newsletters conservam miniatura inline, sem upload criptografado de HQ.
+
 Testes locais não comprovam comportamento dos servidores/clientes WhatsApp.
 Registrar versão/digest, cliente/dispositivo, destino individual/grupo, payload
 anonimizado, renderização, ID da seleção e evento para Android, iOS e Web.

@@ -219,6 +219,24 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 - Retirada: suporte oficial equivalente em todos os caminhos e limites de recursos,
   com regressões aprovadas e homologação registrada.
 
+## F-016 — Preview de links com fallback, contexto e fetch limitado
+
+- Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
+- Problema/esperado: preview pequeno, metadados explícitos sobrescritos, URLs relativas
+  incorretas após redirects, EXIF perdido e operações sem cancelamento. Preparar uma
+  vez, preservar dados, produzir miniaturas inline/HQ e transmitir a mensagem uma vez.
+- Referência: Evolution Go #207 (cateim), adaptado com tratamento de EXIF e contexto.
+- Evidências: testes do PR adaptados e regressões de redirects, cancelamento, limites,
+  upload com falha, newsletter, EXIF e preservação de texto/metadados. Helpers de envio
+  usam cliente da instância pelo índice sincronizado e contexto nas operações afetadas.
+- Configuração: `LINK_PREVIEW_ALLOW_PRIVATE=false`; acesso a redes locais/privadas
+  exige opt-in explícito. A política vale também após redirects e resolução DNS.
+  Para instalações que usavam previews internos, habilitar somente em ambiente confiável.
+- Limitações: HQ em newsletters mantém fallback inline; aparência remota depende de
+  homologação. O helper Go SendLink passa a receber contexto; o contrato HTTP permanece.
+- Retirada: paridade oficial de metadados, I/O limitado/cancelável, fallback e proteção
+  de destinos, preservando testes e compatibilidade documentada.
+
 ## Cobertura da auditoria dos 31 commits
 
 | Commits | Itens |

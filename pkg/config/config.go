@@ -17,50 +17,51 @@ import (
 )
 
 type Config struct {
-	PostgresAuthDB       string
-	postgresUsersDB      string
-	PostgresHost         string
-	PostgresPort         string
-	PostgresUser         string
-	PostgresPassword     string
-	PostgresDB           string
-	DatabaseSaveMessages bool
-	GlobalApiKey         string
-	WaDebug              string
-	LogType              string
-	WebhookFiles         bool
-	ConnectOnStartup     bool
-	OsName               string
-	AmqpUrl              string
-	AmqpGlobalEnabled    bool
-	WebhookUrl           string
-	ClientName           string
-	ApiAudioConverter    string
-	ApiAudioConverterKey string
-	MinioEndpoint        string
-	MinioAccessKey       string
-	MinioSecretKey       string
-	MinioBucket          string
-	MinioUseSSL          bool
-	MinioEnabled         bool
-	MinioRegion          string
-	WhatsappVersionMajor int
-	WhatsappVersionMinor int
-	WhatsappVersionPatch int
-	ProxyProtocol        string
-	ProxyHost            string
-	ProxyPort            string
-	ProxyUsername        string
-	ProxyPassword        string
-	AmqpGlobalEvents     []string
-	AmqpSpecificEvents   []string
-	NatsUrl              string
-	NatsGlobalEnabled    bool
-	NatsGlobalEvents     []string
-	EventIgnoreGroup     bool
-	EventIgnoreStatus    bool
-	QrcodeMaxCount       int
-	CheckUserExists      bool
+	PostgresAuthDB          string
+	postgresUsersDB         string
+	PostgresHost            string
+	PostgresPort            string
+	PostgresUser            string
+	PostgresPassword        string
+	PostgresDB              string
+	DatabaseSaveMessages    bool
+	GlobalApiKey            string
+	WaDebug                 string
+	LogType                 string
+	WebhookFiles            bool
+	ConnectOnStartup        bool
+	OsName                  string
+	AmqpUrl                 string
+	AmqpGlobalEnabled       bool
+	WebhookUrl              string
+	ClientName              string
+	ApiAudioConverter       string
+	ApiAudioConverterKey    string
+	MinioEndpoint           string
+	MinioAccessKey          string
+	MinioSecretKey          string
+	MinioBucket             string
+	MinioUseSSL             bool
+	MinioEnabled            bool
+	MinioRegion             string
+	WhatsappVersionMajor    int
+	WhatsappVersionMinor    int
+	WhatsappVersionPatch    int
+	ProxyProtocol           string
+	ProxyHost               string
+	ProxyPort               string
+	ProxyUsername           string
+	ProxyPassword           string
+	AmqpGlobalEvents        []string
+	AmqpSpecificEvents      []string
+	NatsUrl                 string
+	NatsGlobalEnabled       bool
+	NatsGlobalEvents        []string
+	EventIgnoreGroup        bool
+	EventIgnoreStatus       bool
+	QrcodeMaxCount          int
+	CheckUserExists         bool
+	LinkPreviewAllowPrivate bool
 
 	// Logger configurations
 	LogMaxSize    int
@@ -343,48 +344,49 @@ func Load() *Config {
 	}
 
 	config := &Config{
-		PostgresAuthDB:       postgresAuthDB,
-		postgresUsersDB:      postgresUsersDB,
-		DatabaseSaveMessages: databaseSaveMessages == "true",
-		GlobalApiKey:         globalApiKey,
-		WaDebug:              waDebug,
-		LogType:              logType,
-		WebhookFiles:         webhookFiles == "true",
-		ConnectOnStartup:     connectOnStartup == "true",
-		OsName:               osName,
-		AmqpUrl:              amqpUrl,
-		AmqpGlobalEnabled:    amqpGlobalEnabled == "true",
-		WebhookUrl:           webhookUrl,
-		ClientName:           clientName,
-		ApiAudioConverter:    apiAudioConverter,
-		ApiAudioConverterKey: apiAudioConverterKey,
-		PostgresHost:         postgresHost,
-		PostgresPort:         postgresPort,
-		PostgresUser:         postgresUser,
-		PostgresPassword:     postgresPassword,
-		PostgresDB:           postgresDB,
-		WhatsappVersionMajor: major,
-		WhatsappVersionMinor: minor,
-		WhatsappVersionPatch: patch,
-		ProxyProtocol:        proxyProtocol,
-		ProxyHost:            proxyHost,
-		ProxyPort:            proxyPort,
-		ProxyUsername:        proxyUsername,
-		ProxyPassword:        proxyPassword,
-		EventIgnoreGroup:     eventIgnoreGroup == "true",
-		EventIgnoreStatus:    eventIgnoreStatus == "true",
-		QrcodeMaxCount:       qrMaxCount,
-		CheckUserExists:      checkUserExists != "false", // Default true, set to false to disable
-		AmqpGlobalEvents:     amqpGlobalEvents,
-		AmqpSpecificEvents:   amqpSpecificEvents,
-		NatsUrl:              natsUrl,
-		NatsGlobalEnabled:    natsGlobalEnabled == "true",
-		NatsGlobalEvents:     natsGlobalEvents,
-		LogMaxSize:           logMaxSize,
-		LogMaxBackups:        logMaxBackups,
-		LogMaxAge:            logMaxAge,
-		LogDirectory:         logDirectory,
-		LogCompress:          logCompress,
+		PostgresAuthDB:          postgresAuthDB,
+		postgresUsersDB:         postgresUsersDB,
+		DatabaseSaveMessages:    databaseSaveMessages == "true",
+		GlobalApiKey:            globalApiKey,
+		WaDebug:                 waDebug,
+		LogType:                 logType,
+		WebhookFiles:            webhookFiles == "true",
+		ConnectOnStartup:        connectOnStartup == "true",
+		OsName:                  osName,
+		AmqpUrl:                 amqpUrl,
+		AmqpGlobalEnabled:       amqpGlobalEnabled == "true",
+		WebhookUrl:              webhookUrl,
+		ClientName:              clientName,
+		ApiAudioConverter:       apiAudioConverter,
+		ApiAudioConverterKey:    apiAudioConverterKey,
+		PostgresHost:            postgresHost,
+		PostgresPort:            postgresPort,
+		PostgresUser:            postgresUser,
+		PostgresPassword:        postgresPassword,
+		PostgresDB:              postgresDB,
+		WhatsappVersionMajor:    major,
+		WhatsappVersionMinor:    minor,
+		WhatsappVersionPatch:    patch,
+		ProxyProtocol:           proxyProtocol,
+		ProxyHost:               proxyHost,
+		ProxyPort:               proxyPort,
+		ProxyUsername:           proxyUsername,
+		ProxyPassword:           proxyPassword,
+		EventIgnoreGroup:        eventIgnoreGroup == "true",
+		EventIgnoreStatus:       eventIgnoreStatus == "true",
+		QrcodeMaxCount:          qrMaxCount,
+		CheckUserExists:         checkUserExists != "false", // Default true, set to false to disable
+		LinkPreviewAllowPrivate: os.Getenv(config_env.LINK_PREVIEW_ALLOW_PRIVATE) == "true",
+		AmqpGlobalEvents:        amqpGlobalEvents,
+		AmqpSpecificEvents:      amqpSpecificEvents,
+		NatsUrl:                 natsUrl,
+		NatsGlobalEnabled:       natsGlobalEnabled == "true",
+		NatsGlobalEvents:        natsGlobalEvents,
+		LogMaxSize:              logMaxSize,
+		LogMaxBackups:           logMaxBackups,
+		LogMaxAge:               logMaxAge,
+		LogDirectory:            logDirectory,
+		LogCompress:             logCompress,
 	}
 
 	minioEnabled := os.Getenv(config_env.MINIO_ENABLED) == "true"
