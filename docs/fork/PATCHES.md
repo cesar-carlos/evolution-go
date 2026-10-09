@@ -237,6 +237,18 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 - Retirada: paridade oficial de metadados, I/O limitado/cancelável, fallback e proteção
   de destinos, preservando testes e compatibilidade documentada.
 
+## F-017 — Menu acessível do Manager em dispositivos touch
+
+- Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
+- Problema/esperado: navegação e ações invisíveis em telas touch. Overlay legível
+  em `manager-mobile.css/js`, sem modificar bundles, Dockerfile ou branding.
+- Referência: Evolution Go #184 (douglasanpa), com ciclo de vida/foco reimplementados.
+- Evidências: `tests/ui/manager.test.cjs` executado com Playwright/Edge: foco, Tab,
+  Escape, remontagem, resize, scroll e ações em tablet touch. Ambos os testes passaram.
+- Limitações: seletores dependem da estrutura do bundle; revalidar ao trocar Manager.
+  Testes usam fixture com a estrutura do bundle e não uma sessão WhatsApp real.
+- Retirada: Manager oficial com navegação touch/teclado equivalente e regressões aprovadas.
+
 ## Cobertura da auditoria dos 31 commits
 
 | Commits | Itens |
@@ -258,5 +270,5 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 ## Pendências fora da primeira release
 
 F-013/F-014 implementam a adaptação de protocolo e parsing, com homologação de
-renderização/cliques ainda pendente. Imagens com proporção/EXIF (PR #212), previews
-(PR #207), interface móvel (PR #184) e Sender (PR #182) são entregas próprias.
+renderização/cliques ainda pendente. Imagens, previews e Manager são cobertos por F-015/F-016/F-017. Sender (PR #182)
+é uma entrega própria. A homologação em aparelhos permanece pendente.

@@ -9,3 +9,5 @@ scripts/release/__pycache__/
 .idea/
 .vscode/
 .DS_Store
+
+tests/ui/node_modules/
