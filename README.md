@@ -9,16 +9,19 @@
 > [Imagem GHCR](https://github.com/cesar-carlos/evolution-go/pkgs/container/evolution-go)
 
 Imagem inicial: `ghcr.io/cesar-carlos/evolution-go:0.7.2-cesar.1`.
-Para instalação reproduzível, use o digest publicado nas notas da release:
+Para instalação reproduzível da primeira release, use o digest público verificado:
 
 ```sh
-docker pull ghcr.io/cesar-carlos/evolution-go@sha256:<digest-da-release>
+docker pull ghcr.io/cesar-carlos/evolution-go@sha256:8f1771b2dd75e7f07b57d42550d6373d5037abcad3b0197f50154a648fa218ae
 ```
 
 O Compose raiz aceita `EVOLUTION_IMAGE` com essa referência completa. Consulte
 [.env.example](.env.example) para configuração e o guia de manutenção para
 homologação, atualizações e reversão. Listas/botões ainda exigem correção própria;
 esta release não comprova a exibição dessas mensagens no WhatsApp.
+
+[Release publicada](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.2-cesar.1) ·
+[Registro da verificação pública](docs/fork/releases/v0.7.2-cesar.1.json).
 
 ---
 

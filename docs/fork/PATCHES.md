@@ -123,7 +123,7 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 - Estado: `exclusivo do fork`.
 - Problema/esperado: ambiente local com PostgreSQL, pools e limite de logs;
   Compose raiz configura timeouts/conexões e rotação json-file de 100 MB × 5.
-- Commits: `16a799f`, `0fb2be0`; imagem/override passam a ser próprios na tag `v0.7.2-cesar.1`.
+- Commits: `16a799f`, `0fb2be0`, `6037aad`; imagem/override próprios na tag `v0.7.2-cesar.1`.
 - Referência: configuração operacional local, sem PR upstream.
 - Evidências: `docker-compose.yml`, `.env.example`; validação estrutural do Compose
   na release. Não executar esse stack como efeito colateral dos testes.
@@ -146,7 +146,7 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 - Estado: `exclusivo do fork`.
 - Problema/esperado: orientar manutenção coesa e validar regressões/contratos;
   centralizar precedência em AGENTS, especialização nas rules e checks reais na CI.
-- Commits: `16a799f`, `83d8c96`; `7f91622` também fixa geração Swagger com dependências
+- Commits: `16a799f`, `83d8c96`, `6037aad`, `d7aa824`; `7f91622` também fixa geração Swagger com dependências
   e versão documentada da ferramenta. Swagger gerado acompanha as mudanças funcionais.
 - Referências: PR #120 para o contrato/geração; demais instruções são particulares do fork.
 - Evidências: rules/AGENTS, template, Makefile e workflow de qualidade; CI geral mencionada acima.
@@ -160,11 +160,14 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 - Problema/esperado: workflow aponta ao Docker Hub oficial e depende de credenciais ausentes;
   publicar versões próprias no GHCR, com origem/digest verificáveis e retomada segura.
 - Introdução: tag `v0.7.2-cesar.1`; arquivos de manutenção, scripts/release e workflows.
+- Commits: `6037aad`, `d7aa824`; `141bce7` corrige a retomada das notas após a tag inicial.
 - Referência: plano aprovado pelo responsável em 2026-10-09; sem PR upstream.
 - Evidências: testes dos guards de versão/base/imagem, actionlint, CI completa e
   manifesto/smoke checks da release. Consulte o run da tag para os resultados finais.
 - Retomada das notas: a leitura em JSON evita o terminador acrescentado por `gh --jq`;
   regressão cobre CRLF/LF e rejeita alterações de conteúdo/digest.
+- Publicação e acesso anônimo: [registro verificável](releases/v0.7.2-cesar.1.json),
+  com digest, arquiteturas, comandos e run da primeira release.
 - Limitações: visibilidade pública precisa ser configurada no pacote; publicação não
   executa homologação funcional nem implantação. `VERSION` é a fonte de build.
 - Retirada: decisão explícita de retornar à distribuição oficial, com paridade de correções
