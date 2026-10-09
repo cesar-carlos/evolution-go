@@ -13,10 +13,12 @@ previews/imagens e interfaces Manager/Sender.
 [Release e digest da versão](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.2-cesar.2).
 
 ```sh
-docker pull ghcr.io/cesar-carlos/evolution-go:0.7.2-cesar.2
+docker pull ghcr.io/cesar-carlos/evolution-go@sha256:57f495abfbce1a2d7665e4a632ad8f26186316be6dcbf2f0b0173f991766299f
 ```
 
-Para produção, copie o digest imutável da release e use-o em `EVOLUTION_IMAGE`.
+O digest acima foi verificado por download anônimo em ambas as arquiteturas.
+[Registro da verificação](docs/fork/releases/v0.7.2-cesar.2.json). Use essa referência
+completa em `EVOLUTION_IMAGE` para instalação reproduzível.
 
 Imagem inicial (referência de reversão): `ghcr.io/cesar-carlos/evolution-go:0.7.2-cesar.1`.
 Para instalação reproduzível da primeira release, use o digest público verificado:

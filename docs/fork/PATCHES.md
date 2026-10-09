@@ -256,7 +256,8 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 
 ## F-018 — Sender com autenticação de instância e recursos limitados
 
-- Commits: `60d68dd`, `6dd14bf`, `39b4001`; [PR do fork #7](https://github.com/cesar-carlos/evolution-go/pull/7).
+- Commits: `60d68dd`, `6dd14bf`, `39b4001`; [PR do fork #7](https://github.com/cesar-carlos/evolution-go/pull/7)
+  e [complemento #8](https://github.com/cesar-carlos/evolution-go/pull/8).
 - Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
 - Problema/esperado: interface de chat ausente. Adaptação independente de Evolution
   Go #182 (prakash-dev-code), sem injeção da chave global ou pools SQL no handler.
@@ -301,5 +302,7 @@ a CI também os executa no Chromium Linux e detectou overflow do input de arquiv
 corrigido em `6dd14bf`. Consulte os checks dos PRs e o run da tag para o resultado final.
 
 Renderização e cliques em Android/iOS/Web permanecem pendentes. Não houve envio real,
-pagamento PIX ou implantação em produção. A verificação pública por digest será
-registrada em `docs/fork/releases` após a publicação, conforme o guia central.
+pagamento PIX ou implantação em produção. A publicação, os smoke tests de ambas as arquiteturas, os labels e o download
+anônimo por digest foram aprovados no [registro da segunda release](releases/v0.7.2-cesar.2.json).
+A primeira tentativa foi cancelada após downloads lentos no mirror Ubuntu; a segunda
+passou, preservando a tag e o digest da versão anterior.

@@ -9,7 +9,8 @@ Credenciais, conversas e anexos ficam em memória nesta aba. Recarregar, sair ou
 instância apaga os dados; não há persistência em localStorage/sessionStorage/cookies.
 Use HTTPS fora do ambiente local. `/sender/ws` usa token de instância na query para
 o handshake do navegador: o logger da aplicação omite essa rota; configure também
-o proxy para não registrar a query. O stream exige Origin do mesmo host e nunca aceita
+o proxy para não registrar a query. Preserve o Host original e encaminhe os headers
+Upgrade/Connection para permitir o handshake WebSocket. O stream exige Origin do mesmo host e nunca aceita
 um ID de instância fornecido pelo cliente nem assinatura de eventos globais.
 
 O botão **Ativar recebimento** pede confirmação antes de habilitar WebSocket e incluir
