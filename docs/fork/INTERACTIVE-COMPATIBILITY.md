@@ -14,6 +14,13 @@ usavam IDs repetidos, atribua um ID por opção e ajuste o roteamento da respost
 IDs omitidos são gerados sem colisão entre seções nem com IDs explícitos.
 `buttonText` omitido/vazio usa "Ver Menu". Seções precisam conter opções.
 
+O atributo `type` do nó `biz/list` acompanha o tipo do payload: menus
+SINGLE_SELECT usam `single_select`; PRODUCT_LIST usa `product_list`. A primeira
+implementação do fork anunciava ambos como `product_list`. A revisão removeu
+essa inconsistência e testa os IDs/contexto e todos os wrappers suportados.
+Essa correspondência não comprova aceitação remota; registrar renderização,
+seleção e resposta de cada tipo na homologação abaixo.
+
 `ButtonClick` preserva os campos existentes e reconhece respostas encapsuladas,
 incluindo `selected_row_id` no JSON de native-flow. Os nós de envio e o parser de
 recebimento são testados separadamente. CTA de URL/telefone pode abrir uma ação
@@ -37,3 +44,6 @@ Cobrir reply, CTA, listas multisseção, carrosséis, menções/citações e mí
 Inspecionar PIX sem efetuar pagamento. Não enviar mensagens reais na CI.
 
 Até essa homologação, as mudanças de protocolo são compatibilidade experimental.
+
+Os complementos preparados para os PRs de origem estão em
+[UPSTREAM-CONTRIBUTIONS.md](UPSTREAM-CONTRIBUTIONS.md).

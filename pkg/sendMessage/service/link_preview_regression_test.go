@@ -7,6 +7,8 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -116,5 +118,55 @@ func TestPreviewEXIFAndCancelledSend(t *testing.T) {
 	}
 	if err := waitSendDelay(ctx, time.Hour); !errors.Is(err, context.Canceled) {
 		t.Fatal("delay not cancellable")
+	}
+}
+
+func TestPreviewCancellationDuringUpload(t *testing.T) {
+	raw := encodePNG(t, 80, 40)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write(raw) }))
+	defer server.Close()
+	client := newLinkPreviewHTTPClient(true)
+	defer client.CloseIdleConnections()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	entered := make(chan struct{})
+	done := make(chan error, 1)
+	go func() {
+		_, err := prepareLinkMessage(ctx, client, &LinkStruct{Text: "original", Url: server.URL, Title: "Caller", ImgUrl: server.URL}, func(uploadCtx context.Context, _ []byte) (whatsmeow.UploadResponse, error) {
+			close(entered)
+			<-uploadCtx.Done()
+			return whatsmeow.UploadResponse{}, uploadCtx.Err()
+		})
+		done <- err
+	}()
+	select {
+	case <-entered:
+	case <-ctx.Done():
+		<-done
+		t.Fatal("upload not reached")
+	}
+	cancel()
+	if err := <-done; !errors.Is(err, context.Canceled) {
+		t.Fatalf("upload lost caller cancellation: %v", err)
+	}
+}
+
+func TestPreviewRejectsCredentialRedirect(t *testing.T) {
+	var reached atomic.Bool
+	mux := http.NewServeMux()
+	mux.HandleFunc("/start", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "http://secret:password@"+r.Host+"/private", http.StatusFound)
+	})
+	mux.HandleFunc("/private", func(w http.ResponseWriter, r *http.Request) { reached.Store(true) })
+	server := httptest.NewServer(mux)
+	defer server.Close()
+	client := newLinkPreviewHTTPClient(true)
+	defer client.CloseIdleConnections()
+	_, _, err := fetchLinkPreviewResource(context.Background(), client, server.URL+"/start", 1024)
+	if err == nil || reached.Load() {
+		t.Fatal("redirect with credentials followed")
+	}
+	if strings.Contains(err.Error(), "secret") || strings.Contains(err.Error(), "password") {
+		t.Fatal("redirect error disclosed credentials")
 	}
 }
