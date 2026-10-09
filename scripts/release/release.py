@@ -205,11 +205,11 @@ def main():
                 print("- " + line.removeprefix("## "))
         print("\n[Inventário e evidências](" + url + "/docs/fork/PATCHES.md).")
         print("\n[Atualização, homologação e reversão](" + url + "/docs/fork/MAINTENANCE.md).")
-        print("\n## Limitações\n\nExibição e cliques de listas/botões continuam pendentes de correção própria. "
+        print("\n## Limitações\n\nCompatibilidade de listas/botões foi adaptada e segue pendente de homologação Android/iOS/Web. "
               "A CI não envia mensagens reais e não comprova renderização em aparelhos. "
               "Integrações com WhatsApp/licença/serviços reais exigem homologação separada. "
-              "Esta release não implanta em produção. Não há release anterior deste fork; "
-              "em futuras reversões, confira a compatibilidade de banco e sessões antes de voltar o digest.")
+              "Esta release não implanta em produção. Para reverter, use o digest anterior registrado "
+              "e confira a compatibilidade de banco e sessões antes de voltar a imagem.")
 
 
 if __name__ == "__main__":
