@@ -37,8 +37,8 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 - Referência: [PR #121](https://github.com/evolution-foundation/evolution-go/pull/121).
 - Evidências: `pkg/user/service/user_queries_test.go`, testes HTTP de user queries e
   erros WA; `pkg/whatsmeow/service/query_clients_test.go` cobre o índice concorrente de clientes.
-- Limitações: o índice protegido cobre consultas; não significa que todos os mapas legados
-  do projeto estejam protegidos. Latência/foto real não foram medidas nesta revisão.
+- Limitações: F-020 ampliou a sincronização para os consumidores de sessões;
+  latência/foto real não foram medidas nesta revisão.
 - Retirada: paridade oficial do campo e contratos, limites, falhas opcionais e isolamento,
   com as regressões aprovadas.
 
@@ -351,6 +351,7 @@ compatibilidade; publicação aprovada não representa comprovação de renderiz
 
 - Estado: `local`; armazenamento integrado pelo PR #12, commit `0a50034`.
 - Validação: CI [37974834132](https://github.com/cesar-carlos/evolution-go/actions/runs/37974834132) aprovada (Go/race/PostgreSQL e navegador).
+- Commits: `0a50034` (store/entrypoint) e `68f4725` (isolamento do fixture PostgreSQL).
 - Comparação: 2026-10-09, base oficial `0.7.2`, issue #186.
 - Referências: #117 (guilhermeCassettari e Ay0rus), #194, #174/#178 e #206;
   integração seletiva descrita em [UPSTREAM-CONTRIBUTIONS.md](UPSTREAM-CONTRIBUTIONS.md).
@@ -370,8 +371,12 @@ compatibilidade; publicação aprovada não representa comprovação de renderiz
   equivalentes, comprovados pelas regressões SQLite/PostgreSQL.
 ## F-020 — Ciclo de conexão por instância e encerramento dos workers
 
-- Estado: `local`; commit `68f4725`, integrado pelo PR #13.
-- CI: [37978099885](https://github.com/cesar-carlos/evolution-go/actions/runs/37978099885) aprovada (Go/PostgreSQL/race e navegador).
+- Estado: `local`; commits `68f4725`, `0f52e07`, `1b3a032` e `6115fa2`,
+  integrados pelos PRs #13/#15.
+- CI: [entrega principal](https://github.com/cesar-carlos/evolution-go/actions/runs/37978099885),
+  [complemento](https://github.com/cesar-carlos/evolution-go/actions/runs/37979506985) e
+  [commit final](https://github.com/cesar-carlos/evolution-go/actions/runs/37979856414)
+  aprovados (Go/PostgreSQL/race e navegador).
 - Comparação: 2026-10-09, base oficial `0.7.2`; issue #186 e revisão do #200.
   #200/#131 são referências de defeitos evitados, não merges incorporados.
 - Problema/esperado: mapas/canais compartilhados permitiam corridas, workers órfãos
@@ -390,6 +395,8 @@ compatibilidade; publicação aprovada não representa comprovação de renderiz
 - Evidências: session_lifecycle_test.go cobre 32 inícios/paradas, isolamento,
   workers, substituição, exclusão durante startup, cinco retries, cancelamento,
   shutdown, espera de pareamento e ordem worker/logout/transporte.
+  TestStopIntentRejectsRacingReconnectBeforeGate reproduz a admissão indevida de
+  reconexão ao remover o guard via overlay Go; passou com a correção e -race.
   TestRuntimeOperationBelongsToExecution e TestOldCeremonyCannotAuthorizeReplacementClient
   cobrem cancelamento, tokens antigos/acesso entre instâncias e barreira de requisições
   passkey. session_qr_test.go verifica cancelamento da rotação, expiração sem reinício e
