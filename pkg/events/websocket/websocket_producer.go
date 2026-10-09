@@ -64,6 +64,18 @@ func (w *wsConn) close() {
 	}
 }
 
+// Tell a browser that another consumer owns this instance now, so an automatic
+// reconnect does not repeatedly evict the new consumer. Control writes are safe
+// concurrently with the data writer, and the registry lock is never held here.
+func (w *wsConn) closeReplaced() {
+	if !w.closed.Load() {
+		if err := w.conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(4001, "replaced by another consumer"), time.Now().Add(time.Second)); err != nil {
+			logger.LogWarn("Erro ao notificar substituição websocket: %v", err)
+		}
+	}
+	w.close()
+}
+
 type websocketProducer struct {
 	clients       map[string]*wsConn
 	broadcast     []*wsConn
@@ -164,7 +176,7 @@ func (p *websocketProducer) addClient(instanceID string, conn *websocket.Conn) *
 	closePrevious := client != nil && previous != client && p.releaseConnectionLocked(previous)
 	p.clientsMux.Unlock()
 	if closePrevious {
-		previous.close()
+		previous.closeReplaced()
 	}
 	return client
 }

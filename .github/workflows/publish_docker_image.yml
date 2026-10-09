@@ -109,6 +109,11 @@ jobs:
               test -x /app/server
               grep -a -F -q -- "-X main.version=$1" /app/server
               test -s /app/manager/dist/index.html
+              test -s /app/manager/dist/assets/manager-mobile.js
+              test -s /app/manager/dist/assets/manager-mobile.css
+              test -s /app/web/sender/index.html
+              test -s /app/web/sender/assets/sender.js
+              test -s /app/web/sender/assets/sender.css
               command -v ffmpeg
               command -v pdftoppm
               /app/server -h 2>&1 | grep -q "dev"

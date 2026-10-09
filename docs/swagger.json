@@ -3356,6 +3356,120 @@
                 }
             }
         },
+        "/sender/resolve-lids": {
+            "get": {
+                "description": "Requires the instance apikey; uses its existing PostgreSQL or SQLite store. Missing mappings are omitted.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Sender"
+                ],
+                "summary": "Resolve WhatsApp LIDs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "1-100 comma-separated numeric LIDs (up to 32 digits each)",
+                        "name": "lids",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
+                    }
+                }
+            }
+        },
+        "/sender/session": {
+            "get": {
+                "description": "Uses the instance apikey header; never returns a token or global key.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Sender"
+                ],
+                "summary": "Sender session",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_evolution-foundation_evolution-go_pkg_sender_service.Session"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
+                    }
+                }
+            }
+        },
+        "/sender/ws": {
+            "get": {
+                "description": "Same-origin WebSocket. Token is the instance key; query instanceId is rejected. Access logs must redact query tokens.",
+                "tags": [
+                    "Sender"
+                ],
+                "summary": "Sender instance event stream",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Instance API key",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "WebSocket upgrade",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
+                    }
+                }
+            }
+        },
         "/unlabel/chat": {
             "post": {
                 "description": "Remove label from chat",
@@ -5249,6 +5363,29 @@
                 },
                 "text": {
                     "type": "string"
+                }
+            }
+        },
+        "github_com_evolution-foundation_evolution-go_pkg_sender_service.Session": {
+            "type": "object",
+            "properties": {
+                "connected": {
+                    "type": "boolean"
+                },
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "websocketEnabled": {
+                    "type": "boolean"
                 }
             }
         },

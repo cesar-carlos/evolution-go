@@ -19,6 +19,7 @@ import (
 	newsletter_handler "github.com/evolution-foundation/evolution-go/pkg/newsletter/handler"
 	poll_handler "github.com/evolution-foundation/evolution-go/pkg/poll/handler"
 	send_handler "github.com/evolution-foundation/evolution-go/pkg/sendMessage/handler"
+	sender_handler "github.com/evolution-foundation/evolution-go/pkg/sender/handler"
 	server_handler "github.com/evolution-foundation/evolution-go/pkg/server/handler"
 	user_handler "github.com/evolution-foundation/evolution-go/pkg/user/handler"
 )
@@ -38,6 +39,7 @@ type Routes struct {
 	newsletterHandler       newsletter_handler.NewsletterHandler
 	pollHandler             *poll_handler.PollHandler
 	serverHandler           server_handler.ServerHandler
+	senderHandler           *sender_handler.SenderHandler
 }
 
 func (r *Routes) AssignRoutes(eng *gin.Engine) {
@@ -74,6 +76,14 @@ func (r *Routes) AssignRoutes(eng *gin.Engine) {
 	eng.GET("/manager", func(c *gin.Context) {
 		c.File("manager/dist/index.html")
 	})
+
+	// Sender uses its own assets; existing root and Manager routes are preserved.
+	eng.Static("/sender/assets", "./web/sender/assets")
+	eng.GET("/sender", r.senderHandler.Page)
+	eng.GET("/sender/", r.senderHandler.Page)
+	eng.GET("/sender/session", r.authMiddleware.Auth, r.senderHandler.Session)
+	eng.GET("/sender/resolve-lids", r.authMiddleware.Auth, r.senderHandler.ResolveLIDs)
+	eng.GET("/sender/ws", r.senderHandler.WebsocketAuth(r.authMiddleware.Auth), r.senderHandler.Websocket)
 
 	eng.GET("/server/ok", r.serverHandler.ServerOk)
 
@@ -261,6 +271,7 @@ func NewRouter(
 	newsletterHandler newsletter_handler.NewsletterHandler,
 	pollHandler *poll_handler.PollHandler,
 	serverHandler server_handler.ServerHandler,
+	senderHandler *sender_handler.SenderHandler,
 ) *Routes {
 	return &Routes{
 		authMiddleware:          authMiddleware,
@@ -277,5 +288,6 @@ func NewRouter(
 		newsletterHandler:       newsletterHandler,
 		pollHandler:             pollHandler,
 		serverHandler:           serverHandler,
+		senderHandler:           senderHandler,
 	}
 }
