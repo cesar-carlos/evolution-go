@@ -249,6 +249,23 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
   Testes usam fixture com a estrutura do bundle e não uma sessão WhatsApp real.
 - Retirada: Manager oficial com navegação touch/teclado equivalente e regressões aprovadas.
 
+## F-018 — Sender com autenticação de instância e recursos limitados
+
+- Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
+- Problema/esperado: interface de chat ausente. Adaptação independente de Evolution
+  Go #182 (prakash-dev-code), sem injeção da chave global ou pools SQL no handler.
+- Comportamento: `/sender`, credenciais em memória, envio REST existente, eventos
+  restritos à instância, reconexão/limpeza, histórico e mídia limitados. Manager/raiz preservados.
+- Evidências: testes HTTP de auth/origem/isolamento e HTML loopback/proxy; testes
+  de stores reais SQLite/PostgreSQL; quatro testes de navegador Manager/Sender
+  com REST/WS simulados, inclusive XSS, troca de instância, mídia, limites e reconexão.
+- Documentação: [SENDER.md](SENDER.md). Swagger gerado; assets copiados na imagem.
+  CI executa testes de navegador e regressões da dependência Whatsmeow fixada.
+- Limitações: produtor WS permite uma conexão por instância (4001 pausa o anterior). Query token
+  precisa ser omitido dos logs do proxy. Funcionamento remoto exige homologação.
+- Retirada: Sender oficial com isolamento, credenciais não expostas, stores em ambos
+  os dialetos e gestão de recursos equivalentes, com regressões e homologação aprovadas.
+
 ## Cobertura da auditoria dos 31 commits
 
 | Commits | Itens |
@@ -270,5 +287,4 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 ## Pendências fora da primeira release
 
 F-013/F-014 implementam a adaptação de protocolo e parsing, com homologação de
-renderização/cliques ainda pendente. Imagens, previews e Manager são cobertos por F-015/F-016/F-017. Sender (PR #182)
-é uma entrega própria. A homologação em aparelhos permanece pendente.
+renderização/cliques ainda pendente. Imagens, previews e Manager são cobertos por F-015/F-016/F-017. Sender é coberto por F-018. A homologação em aparelhos permanece pendente.

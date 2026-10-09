@@ -22,6 +22,17 @@ jobs:
     env:
       CGO_ENABLED: '1'
       GOFLAGS: -mod=readonly
+      SENDER_TEST_POSTGRES_DSN: postgres://postgres:sender-test@localhost:5432/sender_test?sslmode=disable
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: sender-test
+          POSTGRES_DB: sender_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sender_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     defaults:
       run:
         shell: bash
@@ -94,3 +105,28 @@ jobs:
 
       - name: Test with race detector
         run: go test -race -timeout 5m ./...
+
+      - name: Test the pinned interactive Whatsmeow patch
+        run: |
+          go test -timeout 5m go.mau.fi/whatsmeow
+          go test -race -timeout 5m go.mau.fi/whatsmeow
+
+  browser:
+    name: Manager and Sender browser regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: tests/ui
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: tests/ui/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: npm test

@@ -23,6 +23,9 @@ esta release não comprova a exibição dessas mensagens no WhatsApp.
 [Release publicada](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.2-cesar.1) ·
 [Registro da verificação pública](docs/fork/releases/v0.7.2-cesar.1.json).
 
+Interface de chat do fork: `/sender`, com token de instância informado manualmente.
+Consulte [uso e limites do Sender](docs/fork/SENDER.md).
+
 ---
 
 <p align="center">

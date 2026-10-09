@@ -29,7 +29,7 @@ var _k0 = []byte{0xbb, 0xa4, 0x35, 0x2a, 0x05, 0x9d, 0x6f, 0xae, 0x28, 0xc1, 0xc
 
 var (
 	_6np1 string
-	_96    string
+	_96   string
 )
 
 func _cdo() string {
@@ -145,11 +145,11 @@ func _3ya(resp *http.Response) error {
 }
 
 type RuntimeConfig struct {
-	ID         uint      `gorm:"primaryKey;autoIncrement" json:"id"`
-	Key        string    `gorm:"uniqueIndex;size:100;not null" json:"key"`
-	Value      string    `gorm:"type:text;not null" json:"value"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
+	Key       string    `gorm:"uniqueIndex;size:100;not null" json:"key"`
+	Value     string    `gorm:"type:text;not null" json:"value"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 func (RuntimeConfig) TableName() string {
@@ -374,18 +374,18 @@ const (
 )
 
 type RuntimeContext struct {
-	_kni       string
+	_kni  string
 	_pl87 string // GLOBAL_API_KEY from .env — used as token for licensing check
-	_z14   string
-	_txz       atomic.Bool
-	_s6a      [32]byte // Derived from activation — required by ValidateContext
-	mu           sync.RWMutex
-	_v8       string // Registration URL shown to users before activation
-	_0z9m     string // Registration token for polling
-	_b56         string
-	_64      string
-	_hpv      atomic.Int64 // Messages sent since last heartbeat
-	_ti9      atomic.Int64 // Messages received since last heartbeat
+	_z14  string
+	_txz  atomic.Bool
+	_s6a  [32]byte // Derived from activation — required by ValidateContext
+	mu    sync.RWMutex
+	_v8   string // Registration URL shown to users before activation
+	_0z9m string // Registration token for polling
+	_b56  string
+	_64   string
+	_hpv  atomic.Int64 // Messages sent since last heartbeat
+	_ti9  atomic.Int64 // Messages received since last heartbeat
 }
 
 var _rs atomic.Pointer[RuntimeContext]
@@ -447,8 +447,8 @@ func InitializeRuntime(_b56, _64, _pl87 string) *RuntimeContext {
 	}
 
 	rc := &RuntimeContext{
-		_b56:         _b56,
-		_64:      _64,
+		_b56:  _b56,
+		_64:   _64,
 		_pl87: _pl87,
 	}
 
@@ -642,6 +642,7 @@ func GateMiddleware(rc *RuntimeContext) gin.HandlerFunc {
 		if path == "/health" || path == "/server/ok" || path == "/favicon.ico" ||
 			path == "/license/status" || path == "/license/register" || path == "/license/activate" ||
 			strings.HasPrefix(path, "/manager") || strings.HasPrefix(path, "/assets") ||
+			path == "/sender" || path == "/sender/" || strings.HasPrefix(path, "/sender/assets/") ||
 			strings.HasPrefix(path, "/passkey-ceremony") ||
 			strings.HasPrefix(path, "/swagger") || path == "/ws" ||
 			strings.HasSuffix(path, ".svg") || strings.HasSuffix(path, ".css") ||
@@ -785,7 +786,7 @@ func LicenseRoutes(eng *gin.Engine, rc *RuntimeContext) {
 
 			exchangeResp, err := _dtnx("/v1/register/exchange", map[string]string{
 				"authorization_code": code,
-				"instance_id":       rc._z14,
+				"instance_id":        rc._z14,
 			})
 			if err != nil {
 				c.JSON(http.StatusBadGateway, gin.H{

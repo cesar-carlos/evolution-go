@@ -57,6 +57,8 @@ import (
 	routes "github.com/evolution-foundation/evolution-go/pkg/routes"
 	send_handler "github.com/evolution-foundation/evolution-go/pkg/sendMessage/handler"
 	send_service "github.com/evolution-foundation/evolution-go/pkg/sendMessage/service"
+	sender_handler "github.com/evolution-foundation/evolution-go/pkg/sender/handler"
+	sender_service "github.com/evolution-foundation/evolution-go/pkg/sender/service"
 	server_handler "github.com/evolution-foundation/evolution-go/pkg/server/handler"
 	storage_interfaces "github.com/evolution-foundation/evolution-go/pkg/storage/interfaces"
 	minio_storage "github.com/evolution-foundation/evolution-go/pkg/storage/minio"
@@ -204,7 +206,7 @@ func setupRouter(db *gorm.DB, authDB *sql.DB, sqliteDB *sql.DB, config *config.C
 	// WebSocket authentication uses a query token. Gin's default access logger
 	// includes the raw query, so keep this route out of automatic request logs.
 	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{
-		SkipPaths: []string{"/server/ok", "/message/markread", "/ws"},
+		SkipPaths: []string{"/server/ok", "/message/markread", "/ws", "/sender/ws"},
 	}))
 	r.Use(gin.Recovery())
 
@@ -245,6 +247,9 @@ func setupRouter(db *gorm.DB, authDB *sql.DB, sqliteDB *sql.DB, config *config.C
 		newsletter_handler.NewNewsletterHandler(newsletterService),
 		pollHandler,
 		server_handler.NewServerHandler(),
+		sender_handler.NewSenderHandler(sender_service.NewService(whatsmeowService), func(w http.ResponseWriter, req *http.Request, id string) {
+			websocket_producer.ServeWs(w, req, id, websocketProducer)
+		}),
 	).AssignRoutes(r)
 
 	if config.ConnectOnStartup {

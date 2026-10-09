@@ -220,3 +220,45 @@ func TestServeWsReconnectAndDisconnectCleanup(t *testing.T) {
 		t.Fatal("ServeWs retained a disconnected client")
 	}
 }
+
+func TestReplacedConsumerReceivesCloseCode(t *testing.T) {
+	producer := NewWebsocketProducer(newTestLoggerManager(t))
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ServeWs(w, r, testInstanceID, producer)
+	}))
+	t.Cleanup(server.Close)
+	dial := func() *websocket.Conn {
+		conn, response, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http"), nil)
+		if err != nil {
+			if response != nil {
+				response.Body.Close()
+			}
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { closeTestWS(t, conn) })
+		return conn
+	}
+	old := dial()
+	pong := make(chan struct{}, 1)
+	old.SetPongHandler(func(string) error { pong <- struct{}{}; return nil })
+	closed := make(chan error, 1)
+	go func() { _, _, err := old.ReadMessage(); closed <- err }()
+	if err := old.WriteControl(websocket.PingMessage, nil, time.Now().Add(time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-pong:
+	case <-time.After(3 * time.Second):
+		t.Fatal("first consumer did not register")
+	}
+	dial()
+	select {
+	case err := <-closed:
+		var closeErr *websocket.CloseError
+		if !errors.As(err, &closeErr) || closeErr.Code != 4001 {
+			t.Fatalf("replacement: %v", err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("old consumer did not receive replacement notice")
+	}
+}

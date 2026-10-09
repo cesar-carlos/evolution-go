@@ -1,0 +1,37 @@
+<!doctype html>
+<!-- Chat UI inspired by Evolution Go #182 (prakash-dev-code). Fork implementation. -->
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evolution Go · Sender</title>
+  <link rel="stylesheet" href="/sender/assets/sender.css">
+  <script src="/sender/assets/sender.js" defer></script>
+</head>
+<body>
+  <header><h1>Evolution Go <span>Sender</span></h1><a href="/manager">Manager</a><button id="logout" hidden>Sair / trocar instância</button></header>
+  <p id="status" role="status" aria-live="polite">Informe o token da instância. Credenciais e histórico ficam apenas nesta aba.</p>
+  <form id="login">
+    <label>Token da instância <input id="token" type="password" required autocomplete="off" maxlength="512"></label>
+    <button>Entrar</button>
+  </form>
+  <main id="workspace" hidden>
+    <aside aria-label="Conversas">
+      <h2 id="instanceName"></h2>
+      <button id="live">Ativar recebimento</button>
+      <form id="newChat"><label>Número ou JID <input id="number" required maxlength="64" placeholder="5565999999999"></label><button>Abrir conversa</button></form>
+      <nav id="chats" aria-label="Lista de conversas"></nav>
+    </aside>
+    <section aria-label="Conversa">
+      <div class="chat-heading"><h2 id="chatName">Selecione uma conversa</h2><button id="clear">Limpar histórico</button></div>
+      <ol id="messages" aria-label="Mensagens" aria-live="polite" aria-relevant="additions"></ol>
+      <form id="composer">
+        <label>Mensagem <textarea id="text" rows="3" maxlength="10000"></textarea></label>
+        <label>Anexo (até 16 MiB) <input id="file" type="file"></label>
+        <button id="send" disabled>Enviar</button>
+      </form>
+    </section>
+  </main>
+  <footer>Histórico limitado a 50 conversas e 100 mensagens por conversa. Recarregar ou sair apaga os dados. Envios com resultado incerto não são repetidos automaticamente.</footer>
+</body>
+</html>
