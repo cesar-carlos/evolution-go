@@ -135,6 +135,7 @@
     if (payload.instanceId && payload.instanceId !== session.id) return;
     const data = payload.data || {}, info = data.Info || {};
     if (payload.event === "Receipt") {
+      if (!["Read", "Delivered"].includes(payload.state) || !Array.isArray(data.MessageIDs)) return;
       for (const chat of chats.values()) for (const message of chat.messages) {
         if (message.out && data.MessageIDs?.includes(message.id) && message.state !== "Read") message.state = payload.state;
       }
@@ -161,9 +162,9 @@
       if (JSON.stringify(copy).length <= 8192) descriptor = { [mediaKey]: copy };
     }
     const entry = { id: String(info.ID || crypto.randomUUID()).slice(0, 128), text: String(text).slice(0, 10000), out: !!info.IsFromMe,
-      state: info.IsFromMe ? "Enviada" : "Recebida", mime: media?.mimetype, filename: media?.fileName,
+      state: info.IsFromMe ? "Enviada" : "Recebida", mime: String(media?.mimetype || "").slice(0,128), filename: String(media?.fileName || "").slice(0,256),
       descriptor };
-    if (message.base64) { try { attach(entry, message.base64, media?.mimetype); } catch { /* Keep descriptor for explicit download. */ } }
+    if (message.base64) { try { attach(entry, message.base64, entry.mime); } catch { /* Keep descriptor for explicit download. */ } }
     add(jid, entry, info.IsFromMe ? "" : info.PushName);
   }
   function connectSocket() {

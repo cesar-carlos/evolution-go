@@ -55,6 +55,11 @@ test("Sender isolates sessions, sends existing REST contracts and never persists
     assert.match(requests[1].headers["content-type"],/multipart\/form-data/); assert.match(requests[1].body,/name="type"\r\n\r\ndocument/);
     sockets[0].send(incoming("safe","<img src=x onerror=alert(1)>"));
     await page.getByText("<img src=x onerror=alert(1)>",{exact:true}).waitFor(); assert.equal(await page.locator("#messages img").count(),0);
+    sockets[0].send(JSON.stringify({payload:JSON.stringify({event:"Receipt",state:"unexpected state",data:{MessageIDs:[JSON.parse(requests[0].body).id]}})}));
+    // A subsequent event acts as a barrier without relying on a sleep.
+    sockets[0].send(incoming("barrier","receipt barrier"));
+    await page.getByText("receipt barrier",{exact:true}).waitFor();
+    assert.equal(await page.locator("#messages li.out small").first().textContent(),"Enviada");
     assert.deepEqual(await page.evaluate(() => [localStorage.length,sessionStorage.length,document.cookie]),[0,0,""]);
     await page.getByRole("button",{name:"Sair / trocar instância"}).click(); await login(page,"b");
     assert.equal(await page.locator("#messages li").count(),0); assert.equal(await page.locator("#chats button").count(),0);
