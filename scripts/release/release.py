@@ -207,7 +207,7 @@ def main():
         print("\n[Atualização, homologação e reversão](" + url + "/docs/fork/MAINTENANCE.md).")
         print("\n## Limitações\n\nCompatibilidade de listas/botões foi adaptada e segue pendente de homologação Android/iOS/Web. "
               "A CI não envia mensagens reais e não comprova renderização em aparelhos. "
-              "Integrações com WhatsApp/licença/serviços reais exigem homologação separada. "
+              "Pareamento, reconexão e passkey reais continuam pendentes de homologação. Integrações com WhatsApp/licença/serviços reais exigem homologação separada. "
               "Esta release não implanta em produção. Para reverter, use o digest anterior registrado "
               "e confira a compatibilidade de banco e sessões antes de voltar a imagem.")
 
