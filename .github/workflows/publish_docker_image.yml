@@ -107,6 +107,7 @@ jobs:
             docker run --rm --platform "$platform" --entrypoint /bin/sh "$IMAGE:$VERSION" -ec '
               test "$(cat /app/VERSION)" = "$1"
               test -x /app/server
+              grep -a -F -q -- "-X main.version=$1" /app/server
               test -s /app/manager/dist/index.html
               command -v ffmpeg
               command -v pdftoppm

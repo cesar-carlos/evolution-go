@@ -14,7 +14,8 @@ Ignorar URLs antigas da wiki (`git.evoai.app`, `git.evochat.com`, `EvolutionAPI/
 
 ## Versão e porta
 
-- Versão do app: ler `VERSION` / `CHANGELOG.md` (ex.: **0.7.2**) — não usar “docs 1.0.0” da wiki.
+- Versão do app: ler `VERSION`; `CHANGELOG.md` registra o histórico oficial e pode
+  não identificar a distribuição do fork. Não usar “docs 1.0.0” da wiki.
 - Go: seguir `go.mod` (ex.: **1.25.0**), não assumir só “1.24+” da wiki.
 - Porta: `SERVER_PORT` do **`.env.example` na raiz** (default **8080**); compose local pode usar **8081**. A wiki cita `4000` — tratar como desatualizado.
 
