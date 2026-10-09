@@ -12,6 +12,12 @@ Versão deste código: **0.7.2-cesar.2**, com [compatibilidade interativa](docs/
 previews/imagens e interfaces Manager/Sender.
 [Release e digest da versão](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.2-cesar.2).
 
+```sh
+docker pull ghcr.io/cesar-carlos/evolution-go:0.7.2-cesar.2
+```
+
+Para produção, copie o digest imutável da release e use-o em `EVOLUTION_IMAGE`.
+
 Imagem inicial (referência de reversão): `ghcr.io/cesar-carlos/evolution-go:0.7.2-cesar.1`.
 Para instalação reproduzível da primeira release, use o digest público verificado:
 

@@ -256,7 +256,7 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 
 ## F-018 — Sender com autenticação de instância e recursos limitados
 
-- Commits: `60d68dd, 6dd14bf`; [PR do fork #7](https://github.com/cesar-carlos/evolution-go/pull/7).
+- Commits: `60d68dd`, `6dd14bf`, `39b4001`; [PR do fork #7](https://github.com/cesar-carlos/evolution-go/pull/7).
 - Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
 - Problema/esperado: interface de chat ausente. Adaptação independente de Evolution
   Go #182 (prakash-dev-code), sem injeção da chave global ou pools SQL no handler.
@@ -264,7 +264,8 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
   restritos à instância, reconexão/limpeza, histórico e mídia limitados. Manager/raiz preservados.
 - Evidências: testes HTTP de auth/origem/isolamento e HTML loopback/proxy; testes
   de stores reais SQLite/PostgreSQL; cinco testes de navegador Manager/Sender
-  com REST/WS simulados, inclusive XSS, troca de instância, mídia, limites e reconexão.
+  com REST/WS simulados, inclusive XSS, troca de instância, mídia, limites, estados
+  de receipt inválidos e reconexão. Metadados retidos também têm limites de tamanho.
 - Documentação: [SENDER.md](SENDER.md). Swagger gerado; assets copiados na imagem.
   CI executa testes de navegador e regressões da dependência Whatsmeow fixada.
 - Limitações: produtor WS permite uma conexão por instância (4001 pausa o anterior). Query token
