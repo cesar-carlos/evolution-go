@@ -142,7 +142,7 @@ docker pull ghcr.io/cesar-carlos/evolution-go@sha256:<digest-da-release>
 ```
 
 No Compose raiz, `EVOLUTION_IMAGE` permite usar esse mesmo valor completo. O default
-identifica a versão inicial; use digest em produção. As demais configurações seguem
+identifica a versão em `VERSION`; use digest em produção. As demais configurações seguem
 [.env.example](../../.env.example). Prepare a configuração antes de executar o Compose;
 este guia não autoriza iniciar serviços de produção durante testes da manutenção.
 

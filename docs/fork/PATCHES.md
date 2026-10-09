@@ -177,6 +177,7 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 
 ## F-013 — Protocolo interativo e seleção sem ambiguidade
 
+- Commits: `f5fd551`; [PR do fork #3](https://github.com/cesar-carlos/evolution-go/pull/3).
 - Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
 - Problema/esperado: native-flow sem metadados, duplicação de `biz`, respostas com
   nós indevidos e IDs de lista repetidos. Usar payloads diretos, um responsável pelos
@@ -196,6 +197,7 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 
 ## F-014 — Parsing de respostas interativas
 
+- Commits: `f5fd551`; [PR do fork #3](https://github.com/cesar-carlos/evolution-go/pull/3).
 - Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
 - Problema/esperado: reconhecer respostas encapsuladas e IDs de seleção native-flow,
   preservar o contrato `ButtonClick` e não mutar mensagens compartilhadas.
@@ -207,6 +209,7 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 
 ## F-015 — Dimensões, EXIF e limites de miniaturas
 
+- Commits: `550fcda`; [PR do fork #4](https://github.com/cesar-carlos/evolution-go/pull/4).
 - Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
 - Problema/esperado: imagens sem dimensões são recortadas nos clientes; miniaturas
   ignoram rotação/espelhamento. Preencher dimensões nos caminhos de mídia/status/
@@ -221,6 +224,7 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 
 ## F-016 — Preview de links com fallback, contexto e fetch limitado
 
+- Commits: `7f2f906`; [PR do fork #5](https://github.com/cesar-carlos/evolution-go/pull/5).
 - Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
 - Problema/esperado: preview pequeno, metadados explícitos sobrescritos, URLs relativas
   incorretas após redirects, EXIF perdido e operações sem cancelamento. Preparar uma
@@ -239,25 +243,27 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 
 ## F-017 — Menu acessível do Manager em dispositivos touch
 
+- Commits: `5d492d2`; [PR do fork #6](https://github.com/cesar-carlos/evolution-go/pull/6).
 - Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
 - Problema/esperado: navegação e ações invisíveis em telas touch. Overlay legível
   em `manager-mobile.css/js`, sem modificar bundles, Dockerfile ou branding.
 - Referência: Evolution Go #184 (douglasanpa), com ciclo de vida/foco reimplementados.
 - Evidências: `tests/ui/manager.test.cjs` executado com Playwright/Edge: foco, Tab,
-  Escape, remontagem, resize, scroll e ações em tablet touch. Ambos os testes passaram.
+  Escape, remontagem, resize, scroll e ações em tablet touch. Os testes passaram; validação adicional usa o bundle real do Manager com API simulada.
 - Limitações: seletores dependem da estrutura do bundle; revalidar ao trocar Manager.
-  Testes usam fixture com a estrutura do bundle e não uma sessão WhatsApp real.
+  Testes usam fixture e bundle real com API simulada, sem sessão WhatsApp real.
 - Retirada: Manager oficial com navegação touch/teclado equivalente e regressões aprovadas.
 
 ## F-018 — Sender com autenticação de instância e recursos limitados
 
+- Commits: `60d68dd, 6dd14bf`; [PR do fork #7](https://github.com/cesar-carlos/evolution-go/pull/7).
 - Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
 - Problema/esperado: interface de chat ausente. Adaptação independente de Evolution
   Go #182 (prakash-dev-code), sem injeção da chave global ou pools SQL no handler.
 - Comportamento: `/sender`, credenciais em memória, envio REST existente, eventos
   restritos à instância, reconexão/limpeza, histórico e mídia limitados. Manager/raiz preservados.
 - Evidências: testes HTTP de auth/origem/isolamento e HTML loopback/proxy; testes
-  de stores reais SQLite/PostgreSQL; quatro testes de navegador Manager/Sender
+  de stores reais SQLite/PostgreSQL; cinco testes de navegador Manager/Sender
   com REST/WS simulados, inclusive XSS, troca de instância, mídia, limites e reconexão.
 - Documentação: [SENDER.md](SENDER.md). Swagger gerado; assets copiados na imagem.
   CI executa testes de navegador e regressões da dependência Whatsmeow fixada.
@@ -284,7 +290,15 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 | `83d8c96` | F-011 |
 | `15df3f7`, `882fd48`, `7ba8f68`, `1f46cfa` | Merges de F-003/F-001/F-002; conferir diff dos pais ao migrar |
 
-## Pendências fora da primeira release
+## Validação da segunda release e pendências de homologação
 
-F-013/F-014 implementam a adaptação de protocolo e parsing, com homologação de
-renderização/cliques ainda pendente. Imagens, previews e Manager são cobertos por F-015/F-016/F-017. Sender é coberto por F-018. A homologação em aparelhos permanece pendente.
+F-013–F-018 compõem `0.7.2-cesar.2`, mantendo a base oficial em `0.7.2`.
+Build, vet, testes e race detector completos passaram em Docker (Go 1.25.0 Linux),
+assim como testes da dependência Whatsmeow, stores SQLite/PostgreSQL reais em ambiente
+isolado, actionlint 1.7.7 e 12 guards de release. Cinco testes Playwright/Edge passaram;
+a CI também os executa no Chromium Linux e detectou overflow do input de arquivo,
+corrigido em `6dd14bf`. Consulte os checks dos PRs e o run da tag para o resultado final.
+
+Renderização e cliques em Android/iOS/Web permanecem pendentes. Não houve envio real,
+pagamento PIX ou implantação em produção. A verificação pública por digest será
+registrada em `docs/fork/releases` após a publicação, conforme o guia central.

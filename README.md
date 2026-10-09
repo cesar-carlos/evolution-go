@@ -8,7 +8,11 @@
 > [Releases do fork](https://github.com/cesar-carlos/evolution-go/releases) ·
 > [Imagem GHCR](https://github.com/cesar-carlos/evolution-go/pkgs/container/evolution-go)
 
-Imagem inicial: `ghcr.io/cesar-carlos/evolution-go:0.7.2-cesar.1`.
+Versão deste código: **0.7.2-cesar.2**, com [compatibilidade interativa](docs/fork/INTERACTIVE-COMPATIBILITY.md),
+previews/imagens e interfaces Manager/Sender.
+[Release e digest da versão](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.2-cesar.2).
+
+Imagem inicial (referência de reversão): `ghcr.io/cesar-carlos/evolution-go:0.7.2-cesar.1`.
 Para instalação reproduzível da primeira release, use o digest público verificado:
 
 ```sh
@@ -17,8 +21,8 @@ docker pull ghcr.io/cesar-carlos/evolution-go@sha256:8f1771b2dd75e7f07b57d42550d
 
 O Compose raiz aceita `EVOLUTION_IMAGE` com essa referência completa. Consulte
 [.env.example](.env.example) para configuração e o guia de manutenção para
-homologação, atualizações e reversão. Listas/botões ainda exigem correção própria;
-esta release não comprova a exibição dessas mensagens no WhatsApp.
+homologação, atualizações e reversão. Listas/botões foram adaptados nesta versão;
+a homologação de exibição e cliques no WhatsApp permanece pendente.
 
 [Release publicada](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.2-cesar.1) ·
 [Registro da verificação pública](docs/fork/releases/v0.7.2-cesar.1.json).
