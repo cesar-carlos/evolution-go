@@ -8,9 +8,10 @@
 > [Releases do fork](https://github.com/cesar-carlos/evolution-go/releases) ·
 > [Imagem GHCR](https://github.com/cesar-carlos/evolution-go/pkgs/container/evolution-go)
 
-Versão deste código: **0.7.2-cesar.2**, com [compatibilidade interativa](docs/fork/INTERACTIVE-COMPATIBILITY.md),
+Versão deste código: **0.7.2-cesar.3**, com [compatibilidade interativa](docs/fork/INTERACTIVE-COMPATIBILITY.md),
 previews/imagens e interfaces Manager/Sender.
-[Release e digest da versão](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.2-cesar.2).
+[Complementos para os PRs de origem](docs/fork/UPSTREAM-CONTRIBUTIONS.md).
+Última imagem publicada e verificada: [0.7.2-cesar.2](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.2-cesar.2).
 
 ```sh
 docker pull ghcr.io/cesar-carlos/evolution-go@sha256:57f495abfbce1a2d7665e4a632ad8f26186316be6dcbf2f0b0173f991766299f

@@ -177,17 +177,24 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 
 ## F-013 — Protocolo interativo e seleção sem ambiguidade
 
-- Commits: `f5fd551`; [PR do fork #3](https://github.com/cesar-carlos/evolution-go/pull/3).
+- Commits: `f5fd551`, complemento `cdc7388`; [PR do fork #3](https://github.com/cesar-carlos/evolution-go/pull/3).
 - Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
 - Problema/esperado: native-flow sem metadados, duplicação de `biz`, respostas com
   nós indevidos e IDs de lista repetidos. Usar payloads diretos, um responsável pelos
   nós, IDs únicos e validação antes de operações externas. Carrosséis escapam JSON.
-- Dependência: [cesar-carlos/whatsmeow](https://github.com/cesar-carlos/whatsmeow/commit/471f98b42c2042b8bec345ff06fa1d1f84528543),
+- Dependência: [cesar-carlos/whatsmeow](https://github.com/cesar-carlos/whatsmeow/commit/14e0a4ffa1fc6472e97b36a344d3936d118c5177),
   baseada em `b572e5bcb92bbc285b68cb6d6540da3093330e04`, fixada por pseudo-version
   no `replace` de go.mod. Licença MPL-2.0 preservada; manutenção descrita no fork da biblioteca.
+  O complemento `14e0a4f` sucede `471f98b`: os atributos da lista acompanham o tipo
+  protobuf, e a consulta de atributos reutiliza o desembrulhamento limitado/nil-safe.
+  A versão anterior anunciava SINGLE_SELECT como product_list; essa correspondência
+  foi corrigida para single_select, sem afirmar aceitação remota comprovada.
 - Referências: whatsmeow #1235 (felps-dev), #1221 (gsdev-br), #1146 (TobyG74), Evolution Go issue #204.
 - Evidências: testes de nós/respostas/wrappers no módulo da biblioteca; testes de
   builders e validação HTTP em `pkg/sendMessage`. Testes reproduziram falhas anteriores.
+  `TestWrappedListPreservesSelectionContract` falhou na implementação anterior;
+  também são cobertos atributos em wrappers vazios/cíclicos/profundos, respostas
+  template/native-flow e biz/hsm explícitos duplicados, preservando metadados.
 - Mudança de validação: `rowId` explícito duplicado passa a retornar 400. Clientes devem
   fornecer IDs únicos; IDs omitidos são gerados sem colisão. `buttonText` vazio usa "Ver Menu".
 - Limitações: atributos de protocolo observados em PRs não constituem especificação
@@ -224,7 +231,7 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 
 ## F-016 — Preview de links com fallback, contexto e fetch limitado
 
-- Commits: `7f2f906`; [PR do fork #5](https://github.com/cesar-carlos/evolution-go/pull/5).
+- Commits: `7f2f906`, regressões `cdc7388`; [PR do fork #5](https://github.com/cesar-carlos/evolution-go/pull/5).
 - Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
 - Problema/esperado: preview pequeno, metadados explícitos sobrescritos, URLs relativas
   incorretas após redirects, EXIF perdido e operações sem cancelamento. Preparar uma
@@ -233,6 +240,8 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 - Evidências: testes do PR adaptados e regressões de redirects, cancelamento, limites,
   upload com falha, newsletter, EXIF e preservação de texto/metadados. Helpers de envio
   usam cliente da instância pelo índice sincronizado e contexto nas operações afetadas.
+  A revisão adiciona cancelamento durante upload e rejeição de redirects com
+  credenciais, sem vazar essas credenciais no erro.
 - Configuração: `LINK_PREVIEW_ALLOW_PRIVATE=false`; acesso a redes locais/privadas
   exige opt-in explícito. A política vale também após redirects e resolução DNS.
   Para instalações que usavam previews internos, habilitar somente em ambiente confiável.
@@ -256,7 +265,7 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 
 ## F-018 — Sender com autenticação de instância e recursos limitados
 
-- Commits: `60d68dd`, `6dd14bf`, `39b4001`; [PR do fork #7](https://github.com/cesar-carlos/evolution-go/pull/7)
+- Commits: `60d68dd`, `6dd14bf`, `39b4001`, regressões `cdc7388`; [PR do fork #7](https://github.com/cesar-carlos/evolution-go/pull/7)
   e [complemento #8](https://github.com/cesar-carlos/evolution-go/pull/8).
 - Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
 - Problema/esperado: interface de chat ausente. Adaptação independente de Evolution
@@ -306,3 +315,16 @@ pagamento PIX ou implantação em produção. A publicação, os smoke tests de 
 anônimo por digest foram aprovados no [registro da segunda release](releases/v0.7.2-cesar.2.json).
 A primeira tentativa foi cancelada após downloads lentos no mirror Ubuntu; a segunda
 passou, preservando a tag e o digest da versão anterior.
+
+## Complementos da revisão de contribuições
+
+F-013/F-016/F-018 receberam complementos de código ou regressões após a comparação
+dos heads de 2026-10-09. O mapa dos PRs, diferenças novas e verificações de origem
+está em [UPSTREAM-CONTRIBUTIONS.md](UPSTREAM-CONTRIBUTIONS.md). Os demais ajustes
+de EXIF, Manager e Sender já estavam integrados e foram preservados.
+O fork da biblioteca passou build, vet, testes e race detector em Docker Go 1.25.0.
+A integração `cdc7388`, preparada para `0.7.2-cesar.3`, também passou build, vet,
+testes e race detector completos do projeto, regressões da biblioteca fixada,
+12 guards de publicação e cinco testes Playwright/Edge. A CI revalida PostgreSQL
+isolado e Chromium Linux. A base oficial continua em `0.7.2`.
+A homologação Android/iOS/Web continua pendente; não houve envio real nesta revisão.

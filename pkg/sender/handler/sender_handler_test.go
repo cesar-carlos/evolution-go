@@ -81,7 +81,7 @@ func TestPageNeverEmbedsCredentialsForLoopbackOrProxy(t *testing.T) {
 		req.Header.Set("apikey", "must-never-appear-in-html")
 		rec := httptest.NewRecorder()
 		r.ServeHTTP(rec, req)
-		if rec.Code != 200 || strings.Contains(rec.Body.String(), "must-never-appear-in-html") || strings.Contains(rec.Body.String(), "__SENDER_BOOTSTRAP__") {
+		if rec.Code != 200 || strings.Contains(rec.Body.String(), "must-never-appear-in-html") || strings.Contains(rec.Body.String(), "__SENDER_BOOTSTRAP__") || strings.Contains(rec.Body.String(), "__EVO_BOOTSTRAP__") {
 			t.Fatal(rec.Code, rec.Body.String())
 		}
 		if rec.Header().Get("Cache-Control") != "no-store" || rec.Header().Get("Content-Security-Policy") == "" {
