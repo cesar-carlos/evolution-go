@@ -328,3 +328,21 @@ testes e race detector completos do projeto, regressões da biblioteca fixada,
 12 guards de publicação e cinco testes Playwright/Edge. A CI revalida PostgreSQL
 isolado e Chromium Linux. A base oficial continua em `0.7.2`.
 A homologação Android/iOS/Web continua pendente; não houve envio real nesta revisão.
+
+## Publicação dos complementos — 0.7.2-cesar.3
+
+Os complementos foram integrados na `main` pelo [PR do fork #10](https://github.com/cesar-carlos/evolution-go/pull/10),
+commit `c73f3a9cfdaa87128c537449f49812e37966ac62`, sem alterar a base oficial.
+A CI da `main` e o workflow da tag passaram. A segunda tentativa do workflow
+concluiu a publicação; a primeira foi cancelada durante downloads lentos no mirror
+Ubuntu, antes de executar o job de publicação.
+
+O [registro da terceira release](releases/v0.7.2-cesar.3.json) preserva o digest,
+manifesto/aliases, download anônimo e smoke tests de `linux/amd64` e `linux/arm64`.
+Versão compilada, commit da biblioteca, labels e recursos Manager/Sender foram
+conferidos nas duas imagens. O digest de `0.7.2-cesar.2` permanece preservado.
+O mesmo registro é anexado à GitHub Release, sem substituir assets anteriores.
+
+Não houve implantação em produção nem homologação real de WhatsApp. As limitações
+interativas e o protocolo experimental continuam descritos em F-013 e no guia de
+compatibilidade; publicação aprovada não representa comprovação de renderização/cliques.
