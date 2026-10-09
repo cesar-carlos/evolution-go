@@ -406,3 +406,46 @@ func TestOldCeremonyCannotAuthorizeReplacementClient(t *testing.T) {
 	}
 	done()
 }
+
+type gateWaitContext struct {
+	context.Context
+	waiting chan struct{}
+	once    sync.Once
+}
+
+func (c *gateWaitContext) Done() <-chan struct{} {
+	c.once.Do(func() { close(c.waiting) })
+	return c.Context.Done()
+}
+
+func TestStopIntentRejectsRacingReconnectBeforeGate(t *testing.T) {
+	s, ctx := testSessions(t)
+	r, err := s.start(ctx, sessionData("one"), liveSession)
+	if err != nil {
+		t.Fatal(err)
+	}
+	<-r.ready
+	if err := lockSession(ctx, r.slot); err != nil {
+		t.Fatal(err)
+	}
+	stopCtx := &gateWaitContext{Context: ctx, waiting: make(chan struct{})}
+	stopped := make(chan error, 1)
+	go func() { stopped <- s.stop(stopCtx, "one", StopManual, "", nil) }()
+	<-stopCtx.waiting // Stop intent is registered, but the gate is still held.
+	var loads atomic.Int32
+	s.wait = func(context.Context, time.Duration) error { return nil }
+	if err := s.reconnect("one", r, func(context.Context) (*ClientData, error) {
+		loads.Add(1)
+		return sessionData("one"), nil
+	}, liveSession); err != nil {
+		t.Fatal(err)
+	}
+	unlockSession(r.slot)
+	if err := <-stopped; err != nil {
+		t.Fatal(err)
+	}
+	s.operations.Wait()
+	if loads.Load() != 0 {
+		t.Fatal("reconnect bypassed pending stop intent")
+	}
+}
