@@ -1,0 +1,6 @@
+{
+  "name": "evolution-go-ui-regressions",
+  "private": true,
+  "scripts": { "test": "node --test *.test.cjs" },
+  "devDependencies": { "playwright": "1.62.1" }
+}
