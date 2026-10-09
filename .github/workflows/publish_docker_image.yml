@@ -1,68 +1,142 @@
-name: Build and Publish Docker Image
+name: Publish fork release
 
 on:
   push:
-    branches:
-      - main
+    tags: ['v*-cesar.*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  quality:
-    name: Quality checks
-    permissions:
-      contents: read
-    uses: ./.github/workflows/quality.yml
-
-  build_deploy:
-    name: Build and Deploy
-    needs: quality
+  validate:
+    if: github.repository == 'cesar-carlos/evolution-go'
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      commit: ${{ steps.release.outputs.commit }}
+      base: ${{ steps.release.outputs.base }}
+      image: ${{ steps.release.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify official base tag
+        run: python3 scripts/release/release.py fetch-base
+      - name: Validate release identity and ancestry
+        id: release
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python3 scripts/release/release.py validate --tag "$RELEASE_TAG"
+
+  quality:
+    needs: validate
+    uses: ./.github/workflows/quality.yml
+    with:
+      format_base: ${{ needs.validate.outputs.base }}
+
+  publish:
+    needs: [validate, quality]
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
     permissions:
       contents: read
       packages: write
+    outputs:
+      digest: ${{ steps.identity.outputs.digest }}
+    env:
+      IMAGE: ${{ needs.validate.outputs.image }}
+      VERSION: ${{ needs.validate.outputs.version }}
+      COMMIT: ${{ needs.validate.outputs.commit }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          submodules: recursive
-
-      - name: Read version
-        id: version
-        run: echo "version=$(cat VERSION 2>/dev/null || echo '0.0.0')" >> "$GITHUB_OUTPUT"
-
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
+          persist-credentials: false
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
-          images: evoapicloud/evolution-go
-          tags: |
-            type=raw,value=${{ steps.version.outputs.version }}
-            type=raw,value=latest,enable=${{ !contains(steps.version.outputs.version, '-beta') }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build and push
-        id: docker_build
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check for an existing version or partial publication
+        id: existing
+        run: python3 scripts/release/release.py state --commit "$COMMIT"
+      - name: Build and push candidate by commit
+        if: steps.existing.outputs.digest == ''
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ env.IMAGE }}:sha-${{ env.COMMIT }}
+          build-args: VERSION=${{ env.VERSION }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/cesar-carlos/evolution-go
+            org.opencontainers.image.revision=${{ env.COMMIT }}
+            org.opencontainers.image.version=${{ env.VERSION }}
+          annotations: |
+            index:org.opencontainers.image.source=https://github.com/cesar-carlos/evolution-go
+            index:org.opencontainers.image.revision=${{ env.COMMIT }}
+            index:org.opencontainers.image.version=${{ env.VERSION }}
+            index:io.github.cesar-carlos.upstream.revision=${{ needs.validate.outputs.base }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          build-args: |
-            VERSION=${{ steps.version.outputs.version }}
+      - name: Verify candidate identity before promotion
+        id: identity
+        run: |
+          python3 scripts/release/release.py state --commit "$COMMIT"
+          test -n "$(sed -n 's/^digest=//p' "$GITHUB_OUTPUT" | tail -1)"
+      - name: Promote the verified digest and verify aliases
+        env:
+          DIGEST: ${{ steps.identity.outputs.digest }}
+        run: |
+          docker buildx imagetools create --tag "$IMAGE:$VERSION" --tag "$IMAGE:sha-$COMMIT" "$IMAGE@$DIGEST"
+          python3 scripts/release/release.py verify --commit "$COMMIT" --digest "$DIGEST"
+          printf 'Image: %s@%s\n' "$IMAGE" "$DIGEST" >> "$GITHUB_STEP_SUMMARY"
+      - name: Smoke check both runtime images without starting the service
+        run: |
+          # shellcheck disable=SC2016
+          for platform in linux/amd64 linux/arm64; do
+            # Inner variables are intentionally evaluated by the container shell.
+            docker run --rm --platform "$platform" --entrypoint /bin/sh "$IMAGE:$VERSION" -ec '
+              test "$(cat /app/VERSION)" = "$1"
+              test -x /app/server
+              grep -a -F -q -- "-X main.version=$1" /app/server
+              test -s /app/manager/dist/index.html
+              command -v ffmpeg
+              command -v pdftoppm
+              /app/server -h 2>&1 | grep -q "dev"
+            ' sh "$VERSION"
+          done
 
-      - name: Image digest
-        run: echo ${{ steps.docker_build.outputs.digest }}
+  release:
+    needs: [validate, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_TAG: ${{ github.ref_name }}
+      COMMIT: ${{ needs.validate.outputs.commit }}
+      DIGEST: ${{ needs.publish.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Create release after successful image publication
+        run: |
+          python3 scripts/release/release.py notes --commit "$COMMIT" --digest "$DIGEST" > release-notes.md
+          if gh release view "$RELEASE_TAG" --json body --jq .body > existing-notes.md 2> release-error.txt; then
+            cmp existing-notes.md release-notes.md
+          elif grep -qi 'release not found' release-error.txt; then
+            gh release create "$RELEASE_TAG" --verify-tag --title "$RELEASE_TAG (fork cesar-carlos)" --notes-file release-notes.md --latest=false
+          else
+            cat release-error.txt >&2
+            exit 1
+          fi

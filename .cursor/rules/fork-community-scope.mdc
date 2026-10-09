@@ -7,6 +7,12 @@ alwaysApply: true
 
 Este repo é um **fork** de um projeto comunitário. O agente e o contribuidor devem facilitar review e merge no upstream, não “reescrever o projeto”.
 
+Política aprovada de manutenção/sincronização/publicação:
+[`docs/fork/MAINTENANCE.md`](../../docs/fork/MAINTENANCE.md).
+Leia também o [inventário](../../docs/fork/PATCHES.md) e atualize os itens afetados.
+Ele define quais complementos locais ainda são necessários e os critérios de retirada;
+o estado de um PR upstream sozinho não autoriza descartar uma correção.
+
 Fontes: [Kubernetes PR guide](https://github.com/kubernetes/community/blob/main/contributors/guide/pull-requests.md), [GitHub — helping others review](https://docs.github.com/en/pull-requests), práticas comuns de CONTRIBUTING (1 PR = 1 concern).
 
 ## Princípio #1 — respeitar o código existente

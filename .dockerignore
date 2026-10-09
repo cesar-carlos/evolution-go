@@ -1,11 +1,14 @@
 # Git
 .git
 .gitignore
+.env*
+**/.env
 
 # Documentation
 README.md
 # docs/ - Mantido porque docs/docs.go é necessário para o build (gerado pelo swagger)
 docs/wiki/
+docs/fork/
 
 # Logs
 logs/
@@ -13,6 +16,9 @@ logs/
 # IDE
 .vscode/
 .idea/
+.cursor/
+AGENTS.md
+.github/
 
 # OS
 .DS_Store

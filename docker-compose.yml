@@ -11,7 +11,7 @@ x-default-logging: &default-logging
 services:
   evolution-go:
     <<: *default-logging
-    image: evoapicloud/evolution-go:latest
+    image: ${EVOLUTION_IMAGE:-ghcr.io/cesar-carlos/evolution-go:0.7.2-cesar.1}
     container_name: evolution-go
     restart: unless-stopped
     ports:

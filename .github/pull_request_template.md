@@ -35,3 +35,11 @@ Limitations / checks not run:
 - [ ] Any dependent changes have been merged and published
 
 ## Additional Notes
+
+## Fork maintenance
+<!-- For changes maintained in this fork, follow docs/fork/MAINTENANCE.md. -->
+- Inventory IDs affected (F-NNN):
+- [ ] docs/fork/PATCHES.md updated, or not applicable with explanation
+- Upstream base/version compared:
+- Evidence that local behavior is preserved or completely replaced:
+- Remaining limitations / manual validation:

@@ -8,6 +8,11 @@ alwaysApply: true
 Fontes do projeto: `docs/wiki/desenvolvimento/contributing.md` + `.github/pull_request_template.md`  
 Disciplina de fork/escopo: rule `fork-community-scope` (sempre aplicar).
 
+Manutenção deste fork segue o [guia](../../docs/fork/MAINTENANCE.md) e o
+[inventário](../../docs/fork/PATCHES.md). Diferencie PRs destinados ao upstream
+de infraestrutura exclusiva do fork. Preserve `origin` como fork e `upstream`
+como fonte oficial; sincronização, migração de base e releases seguem o guia.
+
 **Repo / Issues / PRs:** https://github.com/evolution-foundation/evolution-go
 
 ## Como contribuir (comunidade)
