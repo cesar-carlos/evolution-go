@@ -2,7 +2,14 @@ name: Go Quality
 
 on:
   pull_request:
+  push:
+    branches: [main]
   workflow_call:
+    inputs:
+      format_base:
+        description: Verified upstream commit for release formatting checks
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -40,14 +47,20 @@ jobs:
         env:
           PR_BASE: ${{ github.event.pull_request.base.sha }}
           PUSH_BASE: ${{ github.event.before }}
+          RELEASE_BASE: ${{ inputs.format_base }}
         run: |
-          if [[ -n "$PR_BASE" ]]; then
+          if [[ -n "$RELEASE_BASE" ]]; then
+            base="$RELEASE_BASE"
+          elif [[ -n "$PR_BASE" ]]; then
             base=$(git merge-base "$PR_BASE" HEAD)
           elif [[ -n "$PUSH_BASE" && ! "$PUSH_BASE" =~ ^0+$ ]]; then
             base="$PUSH_BASE"
           else
-            base=$(git hash-object -t tree /dev/null)
+            echo 'A valid comparison base is required' >&2
+            exit 1
           fi
+          git cat-file -e "$base^{commit}"
+          git merge-base --is-ancestor "$base" HEAD
 
           changed_files=$(mktemp)
           trap 'rm -f "$changed_files"' EXIT
@@ -69,6 +82,9 @@ jobs:
 
       - name: Build
         run: go build ./...
+
+      - name: Test fork release guards
+        run: python3 -m unittest discover -s scripts/release -p 'test_*.py' -v
 
       - name: Vet
         run: go vet ./...

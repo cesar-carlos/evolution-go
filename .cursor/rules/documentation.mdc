@@ -10,6 +10,12 @@ Para instruções de trabalho, `AGENTS.md` centraliza precedência e validação
 as rules detalham os temas. A lista abaixo trata do comportamento implementado,
 não autoriza preservar bugs como se fossem contratos desejados.
 
+Escopo/decisões de manutenção: [MAINTENANCE.md](../../docs/fork/MAINTENANCE.md).
+Histórico e necessidade de patches: [PATCHES.md](../../docs/fork/PATCHES.md).
+Atualize o inventário junto às mudanças e preserve entradas substituídas.
+A base oficial verificável está em `.github/upstream-base.json`; `VERSION`
+identifica a distribuição do fork, sem se passar por versão oficial.
+
 ## Prioridade (quando divergirem)
 
 1. **Código** — `pkg/routes`, handlers, `go.mod`, `VERSION`

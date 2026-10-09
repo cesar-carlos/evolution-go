@@ -4,6 +4,7 @@ logs/*
 build/
 *.prof
 coverage.*
+scripts/release/__pycache__/
 .air.toml
 .idea/
 .vscode/

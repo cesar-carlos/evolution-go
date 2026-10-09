@@ -1,3 +1,27 @@
+> **Distribuição independente mantida por cesar-carlos.** Este fork preserva correções
+> locais enquanto acompanha as releases oficiais de Evolution Go. Não implica
+> endosso da Evolution Foundation. As informações e atribuições do projeto original
+> são preservadas abaixo.
+>
+> [Manutenção e decisões](docs/fork/MAINTENANCE.md) ·
+> [Inventário das correções](docs/fork/PATCHES.md) ·
+> [Releases do fork](https://github.com/cesar-carlos/evolution-go/releases) ·
+> [Imagem GHCR](https://github.com/cesar-carlos/evolution-go/pkgs/container/evolution-go)
+
+Imagem inicial: `ghcr.io/cesar-carlos/evolution-go:0.7.2-cesar.1`.
+Para instalação reproduzível, use o digest publicado nas notas da release:
+
+```sh
+docker pull ghcr.io/cesar-carlos/evolution-go@sha256:<digest-da-release>
+```
+
+O Compose raiz aceita `EVOLUTION_IMAGE` com essa referência completa. Consulte
+[.env.example](.env.example) para configuração e o guia de manutenção para
+homologação, atualizações e reversão. Listas/botões ainda exigem correção própria;
+esta release não comprova a exibição dessas mensagens no WhatsApp.
+
+---
+
 <p align="center">
   <a href="https://evolutionfoundation.com.br">
     <img src="./public/hover-evolution.png" alt="Evolution Foundation" />

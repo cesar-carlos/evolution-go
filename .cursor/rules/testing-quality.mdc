@@ -40,8 +40,12 @@ Use os comandos canônicos de `AGENTS.md`; não replique sequências divergentes
 
 ## CI e evidências
 
-- `quality.yml` executa em PRs e é reutilizado pelo workflow de publicação em pushes
-  para `main`. A publicação depende do sucesso da qualidade.
+- `quality.yml` executa em PRs/pushes na `main` e é reutilizado pela publicação
+  de tags do fork. A publicação depende do sucesso da qualidade.
+- Atualizações oficiais devem validar todos os patches ativos conforme o
+  [guia de manutenção](../../docs/fork/MAINTENANCE.md) e registrar evidências no
+  [inventário](../../docs/fork/PATCHES.md). Preserve testes de comportamento quando
+  uma implementação oficial substituir código local; merge sem conflito não basta.
 - A CI verifica formatação dos arquivos Go alterados e executa build, vet, testes
   e race detector no projeto, com CGO e ferramentas de mídia instalados.
 - Não introduza `continue-on-error` para esconder regressões. Distingua falhas

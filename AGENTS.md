@@ -4,6 +4,12 @@ API WhatsApp em Go/Gin, com whatsmeow, PostgreSQL/GORM, sessões em PostgreSQL o
 SQLite e eventos por Webhook, WebSocket, RabbitMQ e NATS. Leia `go.mod`, `VERSION`,
 `pkg/routes/routes.go` e `.env.example` para valores e contratos atuais.
 
+Antes de corrigir bugs, atualizar dependências, sincronizar o upstream ou publicar,
+leia [manutenção do fork](docs/fork/MAINTENANCE.md) e
+[inventário de correções](docs/fork/PATCHES.md). Esses documentos registram o escopo
+aprovado e as decisões; mantenha o inventário atualizado conforme a política do guia.
+A base oficial adotada está em `.github/upstream-base.json`.
+
 ## Princípios e precedência
 
 1. Respeite as instruções do usuário e o escopo da tarefa; preserve trabalho existente.
