@@ -23,6 +23,7 @@ jobs:
       CGO_ENABLED: '1'
       GOFLAGS: -mod=readonly
       SENDER_TEST_POSTGRES_DSN: postgres://postgres:sender-test@localhost:5432/sender_test?sslmode=disable
+      AUTH_STORE_TEST_POSTGRES_DSN: postgres://postgres:sender-test@localhost:5432/sender_test?sslmode=disable
     services:
       postgres:
         image: postgres:16-alpine

@@ -61,3 +61,25 @@ aceitação do servidor nem seleção real. A homologação descrita em
 Não foram enviados novos comentários nem alteradas branches de terceiros nesta
 entrega. Os links e arquivos acima tornam as propostas revisáveis; publicação de
 contribuições aos autores é uma etapa própria, após autorização de envio.
+
+## Armazenamento de sessões — revisão em 2026-10-09
+
+Estado inicial: **revisados, com implementação pendente**. Referência principal:
+[#117](https://github.com/evolution-foundation/evolution-go/pull/117).
+A integração será seletiva, não um merge integral das alternativas abaixo.
+
+| PR | Head comparado | Aproveitamento / defeito evitado |
+|---|---|---|
+| #117 | `03289559d547911d92ad58837db98faeb0c5fd8e` | Retry após falha, compartilhamento e regressão; evitar pool PostgreSQL duplicado e globais mutáveis. |
+| #194 | `411a2f19308c7708a14682cc10c4a7de7ecd9361` | Compartilhamento; adicionar limites pelo authDB existente. |
+| #206 | `f2a73c715a286aefa5c10fa8521dccc7efa56581` | Reutilização de authDB; rejeitar falha permanente via sync.Once. |
+| #174 | `33b6d186c27b05ece57abe76d9640318f647c7f9` | Referência para reutilização do pool. |
+| #178 | `ae4f3ecfa64469bfab3abb4a9b869a331574c725` | Referência para reutilização do pool; evitar Upgrade a cada início e fallback que reabre pools. |
+| #102 | `a54c075c39e53b96849c041eee80e4b68b25cee2` | Origem da proposta de pool compartilhado; rejeitar cache permanente de erros. |
+| #131 | `f5892fdb14cb1f631f414a708b82685da8527d6e` | Revisado como alternativa; corrida entre leitura fora do mutex e escrita reproduzida com -race. |
+| #200 | `58cf23ab5e27c8f70757ab7a56f52bd9efa83e41` | Revisado como alternativa; não transportar mapa concorrente sem proteção nem fechamento antes de parar consumidores. |
+
+Heads serão revalidados antes da contribuição ao #117. A revisão isolada reproduziu
+falha permanente no #206 e corrida no #131. Os helpers de #117/#194 recuperaram após
+falha e compartilharam o container em 32 chamadas. Isso não valida o ciclo completo,
+WhatsApp real, nem implica aprovação do mantenedor.

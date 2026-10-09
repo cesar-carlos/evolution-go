@@ -84,7 +84,7 @@ func init() {
 	}
 }
 
-func setupRouter(db *gorm.DB, authDB *sql.DB, sqliteDB *sql.DB, config *config.Config, conn *amqp.Connection, exPath string, runtimeCtx *core.RuntimeContext) *gin.Engine {
+func setupRouter(db *gorm.DB, authDB *sql.DB, sqliteDB *sql.DB, config *config.Config, conn *amqp.Connection, exPath string, runtimeCtx *core.RuntimeContext) (*gin.Engine, whatsmeow_service.WhatsmeowService) {
 	killChannel := make(map[string](chan bool))
 	clientPointer := make(map[string]*whatsmeow.Client)
 
@@ -269,7 +269,7 @@ func setupRouter(db *gorm.DB, authDB *sql.DB, sqliteDB *sql.DB, config *config.C
 		websocket_producer.ServeWs(c.Writer, c.Request, instanceId, websocketProducer)
 	})
 
-	return r
+	return r, whatsmeowService
 }
 
 func migrate(db *gorm.DB) {
@@ -328,9 +328,12 @@ func initPostgresAuthDB(config *config.Config) (*sql.DB, error) {
 	db.SetConnMaxLifetime(5 * time.Minute) // Reconectar após 5 minutos para evitar timeouts
 	db.SetConnMaxIdleTime(1 * time.Minute) // Fechar conexões ociosas após 1 minuto
 
-	err = db.Ping()
+	pingCtx, pingCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer pingCancel()
+	err = db.PingContext(pingCtx)
 	if err != nil {
-		return nil, fmt.Errorf("erro ao pingar banco AUTH PostgreSQL: %v", err)
+		_ = db.Close() // Preserve the ping error while releasing the failed pool.
+		return nil, fmt.Errorf("erro ao pingar banco AUTH PostgreSQL: %w", err)
 	}
 
 	logger.LogInfo("Conectado ao banco AUTH PostgreSQL com pool configurado")
@@ -416,7 +419,7 @@ func main() {
 		logger.LogInfo("RabbitMQ URL not configured, skipping RabbitMQ connection")
 	}
 
-	r := setupRouter(db, authDB, sqliteDB, cfg, conn, exPath, runtimeCtx)
+	r, sessions := setupRouter(db, authDB, sqliteDB, cfg, conn, exPath, runtimeCtx)
 
 	// Graceful shutdown with heartbeat
 	heartbeatCtx, heartbeatCancel := context.WithCancel(context.Background())
@@ -452,6 +455,9 @@ func main() {
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		logger.LogError("[SHUTDOWN] Server forced to shutdown: %v", err)
+	}
+	if err := sessions.Shutdown(shutdownCtx); err != nil {
+		logger.LogError("[SHUTDOWN] Authentication store shutdown incomplete: %v", err)
 	}
 
 	logger.LogInfo("[SHUTDOWN] Server exited")
