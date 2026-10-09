@@ -58,8 +58,8 @@ teste comprova consistência interna e preservação dos IDs/contexto; não comp
 aceitação do servidor nem seleção real. A homologação descrita em
 [INTERACTIVE-COMPATIBILITY.md](INTERACTIVE-COMPATIBILITY.md) permanece necessária.
 
-Não foram enviados novos comentários nem alteradas branches de terceiros nesta
-entrega. Os links e arquivos acima tornam as propostas revisáveis; publicação de
+Na entrega de mensagens interativas não foram enviados novos comentários nem
+alteradas branches de terceiros. Os links e arquivos acima tornam as propostas revisáveis; publicação de
 contribuições aos autores é uma etapa própria, após autorização de envio.
 
 ## Armazenamento de sessões — revisão em 2026-10-09
@@ -101,7 +101,11 @@ branch `codex/pr117-shared-auth-store`, baseada em `03289559d547911d92ad58837db9
 Preserva módulo `github.com/EvolutionAPI/evolution-go`, go.mod/go.sum e submódulo
 `0923702fb3fac8525241f15331b92116485d69eb`. Na própria base passaram build, vet,
 testes completos e race em Docker Go 1.25, incluindo PostgreSQL 16 e SQLite reais.
-F-020 foi integrado separadamente pelo PR #13 com CI aprovada; não faz parte desse
-patch. O comentário autorizado no #117 será registrado após a publicação.
+F-020 foi integrado separadamente pelos PRs #13/#15 com CI aprovada; não faz parte desse
+patch. A contribuição foi publicada no [comentário do #117](https://github.com/evolution-foundation/evolution-go/pull/117#issuecomment-6088147609),
+com diagnóstico, créditos, comandos reproduzíveis e link para o patch. A release
+[0.7.2-cesar.4](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.2-cesar.4)
+e sua evidência verificam a distribuição integrada. Não foi aberto PR upstream duplicado
+nem alterada a branch do autor.
 Os autores das propostas recebem crédito nas notas do patch; não houve merge
 integral nem declaração de aprovação do mantenedor.

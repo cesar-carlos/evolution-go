@@ -411,12 +411,19 @@ compatibilidade; publicação aprovada não representa comprovação de renderiz
 - Retirada: ciclo oficial com isolamento, ownership e retries equivalentes,
   comprovado pelas regressões do fork, incluindo ausência de reinício intencional.
 
-### Candidata 0.7.2-cesar.4
+## Publicação de armazenamento e ciclo de vida — 0.7.2-cesar.4
 
-Inclui F-019 (storage) e F-020 (ciclo de vida), mantendo todos os patches anteriores
-e a base oficial 0.7.2. Candidata preparada em branch própria, sem movimentar tags
-publicadas. Publicação, digest e download público só serão registrados após os
-checks e o workflow da tag concluírem. Nenhuma implantação em produção autorizada
-por esta publicação. Reversão prevista para o digest de 0.7.2-cesar.3, após conferir
-compatibilidade dos bancos/sessões; não foram adicionadas migrações de aplicação
-nem atualizadas dependências nesta entrega.
+F-019/F-020 foram integrados pelos PRs #12/#13/#15; a versão foi preparada no #14.
+Commit da tag: `bf85d753c3803158f0a1ee280180cd4914ad9db9`, validado na main e pelo
+workflow da publicação. Base oficial 0.7.2 e patches anteriores preservados.
+
+O [registro da quarta release](releases/v0.7.2-cesar.4.json) contém digest, aliases,
+manifesto, download anônimo e smoke checks das duas arquiteturas. Versão compilada,
+labels, biblioteca e recursos Manager/Sender foram conferidos. O mesmo registro
+está anexado à GitHub Release; a imagem é pública e não publica alias latest.
+
+O digest anterior (v3) permanece disponível para reversão. A comparação v3/v4 de
+go.mod/go.sum, configuração e modelos não mostrou mudanças; não há novas migrações
+de aplicação. Antes de reverter produção, conferir banco/sessões e backup conforme
+o [guia](MAINTENANCE.md). Não houve acesso ao banco nem implantação em produção.
+Pareamento, reconexão, passkey e renderização/cliques reais continuam pendentes.

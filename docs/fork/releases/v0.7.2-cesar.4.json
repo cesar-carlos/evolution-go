@@ -1,0 +1,90 @@
+{
+  "version": "0.7.2-cesar.4",
+  "tag": "v0.7.2-cesar.4",
+  "date": "2026-10-09",
+  "commit": "bf85d753c3803158f0a1ee280180cd4914ad9db9",
+  "upstream": {
+    "repository": "evolution-foundation/evolution-go",
+    "tag": "0.7.2",
+    "sha": "9337afc47e10b86cc896a6f432240e40fee95dd1"
+  },
+  "image": "ghcr.io/cesar-carlos/evolution-go",
+  "digest": "sha256:06d66dd1e38e4f542d58dd2aa27ebc0b3efd7ba0be163a4733fb54700a864bb9",
+  "platforms": [
+    "linux/amd64",
+    "linux/arm64"
+  ],
+  "aliases": [
+    "0.7.2-cesar.4",
+    "sha-bf85d753c3803158f0a1ee280180cd4914ad9db9"
+  ],
+  "latest_alias_published": false,
+  "release": "https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.2-cesar.4",
+  "workflow": "https://github.com/cesar-carlos/evolution-go/actions/runs/37980161508",
+  "previous_release": {
+    "tag": "v0.7.2-cesar.3",
+    "digest": "sha256:26f30cbf14b176ced5f890f2c0b404a33d95308e9f6710d8c1d082d79baadf6d"
+  },
+  "rollback_compatibility": {
+    "dependency_and_model_config_diff": "unchanged between v3 and v4",
+    "new_application_migrations": false,
+    "production_database_inspected": false,
+    "backup_and_runtime_compatibility_check_required_before_rollback": true
+  },
+  "verification": {
+    "status": "verified",
+    "main_quality": "https://github.com/cesar-carlos/evolution-go/actions/runs/37979856414",
+    "main_quality_result": "success",
+    "release_workflow_result": "success",
+    "workflow_attempt": 1,
+    "anonymous_http_manifest": true,
+    "anonymous_pull": true,
+    "anonymous_pull_commands": [
+      "docker --config <fresh-anonymous-config-dir> pull --platform linux/amd64 ghcr.io/cesar-carlos/evolution-go@sha256:06d66dd1e38e4f542d58dd2aa27ebc0b3efd7ba0be163a4733fb54700a864bb9",
+      "docker --config <fresh-anonymous-config-dir> pull --platform linux/arm64 ghcr.io/cesar-carlos/evolution-go@sha256:06d66dd1e38e4f542d58dd2aa27ebc0b3efd7ba0be163a4733fb54700a864bb9"
+    ],
+    "anonymous_config": "Fresh directory containing only config.json with {}",
+    "version_and_sha_aliases_match_digest": true,
+    "previous_release_digest_preserved": true,
+    "runtime_smoke_checks": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "runtime_labels": {
+      "linux/amd64": {
+        "org.opencontainers.image.revision": "bf85d753c3803158f0a1ee280180cd4914ad9db9",
+        "org.opencontainers.image.version": "0.7.2-cesar.4",
+        "org.opencontainers.image.source": "https://github.com/cesar-carlos/evolution-go"
+      },
+      "linux/arm64": {
+        "org.opencontainers.image.revision": "bf85d753c3803158f0a1ee280180cd4914ad9db9",
+        "org.opencontainers.image.version": "0.7.2-cesar.4",
+        "org.opencontainers.image.source": "https://github.com/cesar-carlos/evolution-go"
+      }
+    },
+    "compiled_version_ldflags": "-X main.version=0.7.2-cesar.4",
+    "whatsmeow_commit": "14e0a4ffa1fc6472e97b36a344d3936d118c5177",
+    "whatsmeow_binary_module": "v0.0.0-20261009172419-14e0a4ffa1fc",
+    "local_build_vet_tests_race": "success (application and controlled library)",
+    "published_images_both_architectures_smoke": "success",
+    "browser_tests": 5,
+    "release_guard_tests": 12,
+    "stores": [
+      "SQLite",
+      "PostgreSQL 16 (temporary test database; 20 cycles of 32 calls)"
+    ],
+    "upstream_pr117_patch": "5bb65ac1ddd5307337f357f898cdcbbbb616fa46",
+    "upstream_pr117_base": "03289559d547911d92ad58837db98faeb0c5fd8e",
+    "upstream_patch_build_vet_tests_race": "success on original develop module and pinned library"
+  },
+  "patches": [
+    "F-019",
+    "F-020"
+  ],
+  "limitations": {
+    "real_whatsapp_homologation_executed": false,
+    "interactive_protocol_experimental": true,
+    "production_deployed": false,
+    "sender_websocket_consumers_per_instance": 1
+  }
+}
