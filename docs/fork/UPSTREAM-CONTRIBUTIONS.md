@@ -96,6 +96,12 @@ em todos os schemas durante Upgrade. O fixture PostgreSQL passou a criar um banc
 temporário próprio (role de testes com CREATEDB), evitando interferência com Sender.
 Isso não altera o schema de produção nem atualiza dependências.
 
-A adaptação ao head do #117 está em preparação separada, preservando módulo e
-submódulo originais. O endereço do patch, resultados nessa base e comentário serão
-registrados após a validação; a autorização de envio foi dada nesta tarefa.
+A adaptação ao head do #117 está no [patch 5bb65ac](https://github.com/cesar-carlos/evolution-go/commit/5bb65ac),
+branch `codex/pr117-shared-auth-store`, baseada em `03289559d547911d92ad58837db98faeb0c5fd8e`.
+Preserva módulo `github.com/EvolutionAPI/evolution-go`, go.mod/go.sum e submódulo
+`0923702fb3fac8525241f15331b92116485d69eb`. Na própria base passaram build, vet,
+testes completos e race em Docker Go 1.25, incluindo PostgreSQL 16 e SQLite reais.
+F-020 foi integrado separadamente pelo PR #13 com CI aprovada; não faz parte desse
+patch. O comentário autorizado no #117 será registrado após a publicação.
+Os autores das propostas recebem crédito nas notas do patch; não houve merge
+integral nem declaração de aprovação do mantenedor.
