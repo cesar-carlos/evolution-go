@@ -1,5 +1,8 @@
 module github.com/evolution-foundation/evolution-go
 
+// Minimal interactive protocol patch, based on upstream b572e5bcb92b.
+replace go.mau.fi/whatsmeow => github.com/cesar-carlos/whatsmeow v0.0.0-20261009134740-471f98b42c20
+
 go 1.25.0
 
 require (

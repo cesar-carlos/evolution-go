@@ -1670,61 +1670,7 @@ func (mycli *MyClient) myEventHandler(rawEvt interface{}) {
 		// ===== BUTTON CLICK EVENT DETECTION =====
 		// Detecta cliques em botões e emite evento separado "ButtonClick"
 		// Suporta 3 formatos: ButtonsResponseMessage, InteractiveResponseMessage (NativeFlow), TemplateButtonReplyMessage
-		var buttonClickData map[string]interface{}
-
-		if resp := evt.Message.GetButtonsResponseMessage(); resp != nil {
-			// Legacy buttons response
-			buttonClickData = map[string]interface{}{
-				"buttonId":   resp.GetSelectedButtonID(),
-				"buttonText": resp.GetSelectedDisplayText(),
-				"type":       "buttons_response",
-			}
-			mycli.loggerWrapper.GetLogger(mycli.userID).LogInfo("[%s] Button click detected (legacy): buttonId=%s, buttonText=%s", mycli.userID, resp.GetSelectedButtonID(), resp.GetSelectedDisplayText())
-		} else if resp := evt.Message.GetInteractiveResponseMessage(); resp != nil {
-			// NativeFlow interactive response (quick_reply, cta_url, cta_call, cta_copy)
-			if nf := resp.GetNativeFlowResponseMessage(); nf != nil {
-				buttonId := ""
-				buttonText := ""
-				// Parse paramsJSON to extract id and display_text
-				if nf.GetParamsJSON() != "" {
-					var params map[string]interface{}
-					if err := json.Unmarshal([]byte(nf.GetParamsJSON()), &params); err == nil {
-						if id, ok := params["id"].(string); ok {
-							buttonId = id
-						}
-						if dt, ok := params["display_text"].(string); ok {
-							buttonText = dt
-						}
-					}
-				}
-				buttonClickData = map[string]interface{}{
-					"buttonId":   buttonId,
-					"buttonText": buttonText,
-					"type":       "native_flow_response",
-					"name":       nf.GetName(),
-					"paramsJSON": nf.GetParamsJSON(),
-				}
-				mycli.loggerWrapper.GetLogger(mycli.userID).LogInfo("[%s] Button click detected (native_flow): name=%s, buttonId=%s, buttonText=%s", mycli.userID, nf.GetName(), buttonId, buttonText)
-			}
-		} else if resp := evt.Message.GetTemplateButtonReplyMessage(); resp != nil {
-			// Template button reply
-			buttonClickData = map[string]interface{}{
-				"buttonId":   resp.GetSelectedID(),
-				"buttonText": resp.GetSelectedDisplayText(),
-				"type":       "template_button_reply",
-			}
-			mycli.loggerWrapper.GetLogger(mycli.userID).LogInfo("[%s] Button click detected (template): buttonId=%s, buttonText=%s", mycli.userID, resp.GetSelectedID(), resp.GetSelectedDisplayText())
-		} else if resp := evt.Message.GetListResponseMessage(); resp != nil {
-			// List response (single select)
-			buttonClickData = map[string]interface{}{
-				"buttonId":    resp.GetSingleSelectReply().GetSelectedRowID(),
-				"buttonText":  resp.GetTitle(),
-				"type":        "list_response",
-				"description": resp.GetDescription(),
-			}
-			mycli.loggerWrapper.GetLogger(mycli.userID).LogInfo("[%s] List selection detected: rowId=%s, title=%s", mycli.userID, resp.GetSingleSelectReply().GetSelectedRowID(), resp.GetTitle())
-		}
-
+		buttonClickData := parseButtonClick(evt.Message)
 		// Se detectou clique em botão, emite evento separado "ButtonClick"
 		if buttonClickData != nil {
 			buttonClickMap := map[string]interface{}{
