@@ -163,6 +163,8 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 - Referência: plano aprovado pelo responsável em 2026-10-09; sem PR upstream.
 - Evidências: testes dos guards de versão/base/imagem, actionlint, CI completa e
   manifesto/smoke checks da release. Consulte o run da tag para os resultados finais.
+- Retomada das notas: a leitura em JSON evita o terminador acrescentado por `gh --jq`;
+  regressão cobre CRLF/LF e rejeita alterações de conteúdo/digest.
 - Limitações: visibilidade pública precisa ser configurada no pacote; publicação não
   executa homologação funcional nem implantação. `VERSION` é a fonte de build.
 - Retirada: decisão explícita de retornar à distribuição oficial, com paridade de correções

@@ -32,6 +32,15 @@ class ReleaseGuardsTest(unittest.TestCase):
             with self.subTest(version=version, tag=tag), self.assertRaises(ValueError):
                 release.validate_version(version, tag, self.base)
 
+    def test_release_notes_resume_ignores_only_line_endings(self):
+        expected = "# Correções\n\nDigest: sha256:abc\n"
+        for existing in (expected, expected.rstrip("\n"), expected + "\n", expected.replace("\n", "\r\n")):
+            with self.subTest(existing=existing):
+                release.verify_release_notes(existing, expected)
+        for existing in (None, "", expected.replace("abc", "def"), expected.replace("\n\n", "\n"), expected + " "):
+            with self.subTest(existing=existing), self.assertRaises(ValueError):
+                release.verify_release_notes(existing, expected)
+
     def test_missing_and_invalid_base(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

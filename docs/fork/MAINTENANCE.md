@@ -117,7 +117,8 @@ Ao reexecutar o mesmo run/tag, o workflow verifica os aliases existentes. Só re
 imagem com a mesma revisão, versão, base e arquiteturas. Aliases divergentes,
 autenticação inválida e falhas de consulta interrompem o processo. Uma versão
 existente de outro conteúdo jamais autoriza sobrescrita. Release existente deve
-ter notas idênticas; alterações editoriais posteriores exigem revisão consciente.
+ter notas idênticas, normalizando apenas CRLF/LF e quebras de linha finais do
+cliente/API; alterações editoriais posteriores exigem revisão consciente.
 
 Se a imagem foi publicada mas a release falhou, corrija a causa e reexecute o job/run
 original sem mover a tag. Se o código da própria release precisar mudar, incremente
