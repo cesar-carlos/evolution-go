@@ -11,17 +11,17 @@
 Versão deste código: **0.7.2-cesar.4**, com [compatibilidade interativa](docs/fork/INTERACTIVE-COMPATIBILITY.md),
 previews/imagens, interfaces Manager/Sender e armazenamento/ciclo de sessões corrigidos.
 [Complementos para os PRs de origem](docs/fork/UPSTREAM-CONTRIBUTIONS.md).
-Última imagem publicada e verificada: [0.7.2-cesar.3](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.2-cesar.3).
+Última imagem publicada e verificada: [0.7.2-cesar.4](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.2-cesar.4).
 
 ```sh
-docker pull ghcr.io/cesar-carlos/evolution-go@sha256:26f30cbf14b176ced5f890f2c0b404a33d95308e9f6710d8c1d082d79baadf6d
+docker pull ghcr.io/cesar-carlos/evolution-go@sha256:06d66dd1e38e4f542d58dd2aa27ebc0b3efd7ba0be163a4733fb54700a864bb9
 ```
 
 O digest acima foi verificado por download anônimo em ambas as arquiteturas.
-[Registro da verificação](docs/fork/releases/v0.7.2-cesar.3.json). Use essa referência
+[Registro da verificação](docs/fork/releases/v0.7.2-cesar.4.json). Use essa referência
 completa em `EVOLUTION_IMAGE` para instalação reproduzível.
 
-A versão anterior e seu digest permanecem no [registro de 0.7.2-cesar.2](docs/fork/releases/v0.7.2-cesar.2.json).
+A versão anterior e seu digest permanecem no [registro de 0.7.2-cesar.3](docs/fork/releases/v0.7.2-cesar.3.json).
 Antes de reverter, confira a compatibilidade do banco conforme o guia de manutenção.
 
 Imagem inicial (referência de reversão): `ghcr.io/cesar-carlos/evolution-go:0.7.2-cesar.1`.
@@ -248,8 +248,8 @@ evolution-go/
 | Community | [evolutionfoundation.com.br/community](https://evolutionfoundation.com.br/community) |
 | Docker Hub | [evoapicloud/evolution-go](https://hub.docker.com/r/evoapicloud/evolution-go) |
 | Changelog | [CHANGELOG.md](./CHANGELOG.md) |
-| Contributing | [CONTRIBUTING.md](./CONTRIBUTING.md) |
-| Security | [SECURITY.md](./SECURITY.md) |
+| Contributing | [Contribution guide](./docs/wiki/desenvolvimento/contributing.md) |
+| Security | [Security hardening guide](./docs/wiki/deploy-producao/security.md) |
 
 ---
 
@@ -269,7 +269,7 @@ Evolution Go collects anonymous telemetry data (routes used, API version) to hel
 
 ## Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines on how to submit issues, propose features, and open pull requests.
+Contributions are welcome! Please read [Contribution guide](./docs/wiki/desenvolvimento/contributing.md) for guidelines on how to submit issues, propose features, and open pull requests.
 
 Join our [community](https://evolutionfoundation.com.br/community) to discuss ideas and collaborate.
 
@@ -277,7 +277,7 @@ Join our [community](https://evolutionfoundation.com.br/community) to discuss id
 
 ## Security
 
-For security issues, **do not open a public issue**. Email **suporte@evofoundation.com.br** or use GitHub's private vulnerability reporting. See [SECURITY.md](./SECURITY.md) for details.
+For security issues, **do not open a public issue**. Email **suporte@evofoundation.com.br** or use GitHub's private vulnerability reporting. For deployment precautions, see the [security hardening guide](./docs/wiki/deploy-producao/security.md).
 
 ---
 
