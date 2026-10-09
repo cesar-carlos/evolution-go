@@ -32,6 +32,7 @@ type sessionSlot struct {
 	pairingExpired  bool
 	reconnecting    bool
 	operationCancel context.CancelFunc
+	stopRequests    int
 }
 
 type sessionRun struct {
@@ -164,7 +165,7 @@ func (s *sessionRegistry) startLocked(ctx context.Context, slot *sessionSlot, cd
 	for {
 		s.mu.Lock()
 		slot.mu.Lock()
-		if s.closed {
+		if s.closed || slot.stopRequests > 0 {
 			slot.mu.Unlock()
 			s.mu.Unlock()
 			return nil, errSessionsClosed
@@ -238,12 +239,15 @@ func (s *sessionRegistry) stop(ctx context.Context, id string, reason StopReason
 	if err != nil {
 		return err
 	}
-	// Cancel a pending reconnect before waiting for its per-instance gate.
+	// Mark stop intent before waiting for the gate: a Disconnected callback
+	// racing this request must not enqueue another reconnect after cancellation.
 	slot.mu.Lock()
+	slot.stopRequests++
 	if slot.operationCancel != nil {
 		slot.operationCancel()
 	}
 	slot.mu.Unlock()
+	defer func() { slot.mu.Lock(); slot.stopRequests--; slot.mu.Unlock() }()
 	if err = lockSession(ctx, slot); err != nil {
 		return err
 	}
@@ -293,7 +297,7 @@ func (s *sessionRegistry) reconnect(id string, expected *sessionRun, load func(c
 		return errSessionsClosed
 	}
 	slot.mu.Lock()
-	if slot.reconnecting || (expected != nil && slot.run != expected) {
+	if slot.stopRequests > 0 || slot.reconnecting || (expected != nil && slot.run != expected) {
 		slot.mu.Unlock()
 		s.mu.Unlock()
 		return nil

@@ -379,6 +379,8 @@ compatibilidade; publicação aprovada não representa comprovação de renderiz
   callbacks/limpeza antigos de afetar uma substituta.
 - Implementação: registro privado, identidade por execução, snapshots de settings,
   cancelamento difundido, conclusão explícita e reconexões coalescidas/limitadas.
+  A intenção de parada bloqueia novos retries antes de aguardar o gate da instância,
+  evitando a corrida entre cancelar uma reconexão e enfileirar outra.
   Transporte permanece vivo para logout depois de parar os workers. QR/passkey têm
   sinal de disponibilidade; polling não cria ciclos de QR após expiração.
   DeviceProps é clonado por cliente, evitando mutação global entre instâncias.
