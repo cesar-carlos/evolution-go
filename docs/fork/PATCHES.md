@@ -346,3 +346,24 @@ O mesmo registro é anexado à GitHub Release, sem substituir assets anteriores.
 Não houve implantação em produção nem homologação real de WhatsApp. As limitações
 interativas e o protocolo experimental continuam descritos em F-013 e no guia de
 compatibilidade; publicação aprovada não representa comprovação de renderização/cliques.
+
+## F-019 — Store de autenticação compartilhado e recuperável
+
+- Estado: `local`; implementação na branch de integração, merge/CI ainda pendentes.
+- Comparação: 2026-10-09, base oficial `0.7.2`, issue #186.
+- Referências: #117 (guilhermeCassettari e Ay0rus), #194, #174/#178 e #206;
+  integração seletiva descrita em [UPSTREAM-CONTRIBUTIONS.md](UPSTREAM-CONTRIBUTIONS.md).
+- Problema/esperado: StartClient abria um pool por chamada. Reutilizar authDB no
+  PostgreSQL e um único main.db SQLite, sem cache permanente de falhas.
+- Código: gerenciador privado por serviço, inicialização única em andamento,
+  Upgrade antes da publicação, deadline de 30 s e espera cancelável por chamador.
+  SQLite limita uma conexão, ativa WAL e é fechado pelo gerenciador. PostgreSQL
+  é emprestado do entrypoint, que limita o pool e usa PingContext de 10 s.
+- Evidências: auth_store_test.go cobre recuperação, persistência real de sessão,
+  32 chamadas simultâneas, cancelamento independente, deadline e shutdown.
+  auth_store_postgres_test.go verifica PostgreSQL real, 20 ciclos × 32 chamadas,
+  preservação do handle/limite e ausência de crescimento acumulado de conexões.
+- Limitações: homologação real de WhatsApp pendente. A serialização e o
+  encerramento completo das sessões pertencem à entrega de ciclo de vida.
+- Retirada: store oficial com reutilização, recuperação, contextos e ownership
+  equivalentes, comprovados pelas regressões SQLite/PostgreSQL.
