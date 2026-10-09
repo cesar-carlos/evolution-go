@@ -3,7 +3,6 @@ package newsletter_service
 import (
 	"context"
 	"errors"
-	"time"
 
 	instance_model "github.com/evolution-foundation/evolution-go/pkg/instance/model"
 	logger_wrapper "github.com/evolution-foundation/evolution-go/pkg/logger"
@@ -47,7 +46,7 @@ type GetNewsletterMessagesStruct struct {
 }
 
 func (n *newsletterService) ensureClientConnected(instanceId string) (*whatsmeow.Client, error) {
-	client := n.clientPointer[instanceId]
+	client := n.whatsmeowService.GetClient(instanceId)
 	n.loggerWrapper.GetLogger(instanceId).LogInfo("[%s] Checking client connection status - Client exists: %v", instanceId, client != nil)
 
 	if client == nil {
@@ -59,9 +58,11 @@ func (n *newsletterService) ensureClientConnected(instanceId string) (*whatsmeow
 		}
 
 		n.loggerWrapper.GetLogger(instanceId).LogInfo("[%s] Instance started, waiting 2 seconds...", instanceId)
-		time.Sleep(2 * time.Second)
+		if _, err := n.whatsmeowService.WaitClient(context.Background(), instanceId); err != nil {
+			return nil, err
+		}
 
-		client = n.clientPointer[instanceId]
+		client = n.whatsmeowService.GetClient(instanceId)
 		n.loggerWrapper.GetLogger(instanceId).LogInfo("[%s] Checking new client - Exists: %v, Connected: %v",
 			instanceId,
 			client != nil,

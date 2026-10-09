@@ -447,17 +447,27 @@ func main() {
 
 	// Stop heartbeat loop
 	heartbeatCancel()
+	sessions.BeginShutdown()
 
-	core.Shutdown(runtimeCtx)
-
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()
-
-	if err := srv.Shutdown(shutdownCtx); err != nil {
+	httpShutdownCtx, httpShutdownCancel := context.WithTimeout(shutdownCtx, 10*time.Second)
+	if err := srv.Shutdown(httpShutdownCtx); err != nil {
 		logger.LogError("[SHUTDOWN] Server forced to shutdown: %v", err)
+		if closeErr := srv.Close(); closeErr != nil {
+			logger.LogError("[SHUTDOWN] HTTP close failed: %v", closeErr)
+		}
 	}
+	httpShutdownCancel()
 	if err := sessions.Shutdown(shutdownCtx); err != nil {
 		logger.LogError("[SHUTDOWN] Authentication store shutdown incomplete: %v", err)
+	}
+	licenseStopped := make(chan struct{})
+	go func() { core.Shutdown(runtimeCtx); close(licenseStopped) }()
+	select {
+	case <-licenseStopped:
+	case <-shutdownCtx.Done():
+		logger.LogError("[SHUTDOWN] License notification exceeded shutdown budget")
 	}
 
 	logger.LogInfo("[SHUTDOWN] Server exited")
