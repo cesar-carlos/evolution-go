@@ -145,6 +145,35 @@ type MyClient struct {
 	passkeyCeremony    *ceremony.Store
 }
 
+// retireRevokedSession forgets a device WhatsApp has unpaired. The instance JID
+// is cleared even when the store delete fails, so the next connect creates a
+// new device and can emit a QR instead of replaying the 401.
+func (mycli *MyClient) retireRevokedSession() {
+	if mycli.run != nil {
+		mycli.run.loggedOut.Store(true)
+		mycli.run.paired.Store(false)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	if mycli.WAClient != nil && mycli.WAClient.Store != nil && mycli.WAClient.Store.Container != nil {
+		if err := mycli.WAClient.Store.Delete(ctx); err != nil {
+			mycli.loggerWrapper.GetLogger(mycli.userID).LogError("[%s] Failed to delete revoked device: %v", mycli.userID, err)
+		}
+	}
+	if mycli.instanceRepository != nil {
+		if err := mycli.instanceRepository.UpdateJid(mycli.userID, ""); err != nil {
+			mycli.loggerWrapper.GetLogger(mycli.userID).LogError("[%s] Failed to clear revoked JID: %v", mycli.userID, err)
+		}
+		if err := mycli.instanceRepository.UpdateQrcode(mycli.userID, ""); err != nil {
+			mycli.loggerWrapper.GetLogger(mycli.userID).LogError("[%s] Failed to clear revoked QR: %v", mycli.userID, err)
+		}
+	}
+	if mycli.Instance != nil {
+		mycli.Instance.Jid = ""
+		mycli.Instance.Qrcode = ""
+	}
+}
+
 func (mycli *MyClient) persistMessageAsync(message message_model.Message) {
 	if mycli == nil || mycli.messageRepository == nil {
 		return
@@ -185,13 +214,30 @@ type ProxyConfig struct {
 	Username string `json:"username"`
 }
 
+// sessionProxyEnabled reports whether this session should dial through a proxy.
+// A stored placeholder such as JSON null has no host and is not a proxy.
+func sessionProxyEnabled(instanceProxy, globalHost string) bool {
+	if strings.TrimSpace(globalHost) != "" {
+		return true
+	}
+	raw := strings.TrimSpace(instanceProxy)
+	if raw == "" || strings.EqualFold(raw, "null") {
+		return false
+	}
+	var cfg ProxyConfig
+	if err := json.Unmarshal([]byte(raw), &cfg); err != nil {
+		return true
+	}
+	return strings.TrimSpace(cfg.Host) != ""
+}
+
 func (w whatsmeowService) ReconnectClient(instanceId string) error {
 	return w.sessions.reconnect(instanceId, nil, func(ctx context.Context) (*ClientData, error) {
 		instance, err := w.instanceRepository.GetInstanceByIDContext(ctx, instanceId)
 		if err != nil {
 			return nil, err
 		}
-		return &ClientData{Instance: instance, Subscriptions: strings.Split(instance.Events, ","), IsProxy: instance.Proxy != "" || w.config.ProxyHost != ""}, nil
+		return &ClientData{Instance: instance, Subscriptions: strings.Split(instance.Events, ","), IsProxy: sessionProxyEnabled(instance.Proxy, w.config.ProxyHost)}, nil
 	}, w.runClient)
 }
 
@@ -1772,6 +1818,10 @@ func (mycli *MyClient) handleEvent(rawEvt interface{}) {
 		doWebhook = true
 		postMap["event"] = "LoggedOut"
 		mycli.loggerWrapper.GetLogger(mycli.userID).LogInfo("[%s] Logged out for reason %s", mycli.userID, evt.Reason.String())
+		// Delete with a context that outlives this session. Cancelling the
+		// connection context here aborts whatsmeow's own DELETE and leaves the
+		// revoked device in place, so the next QR attempt reconnects it.
+		mycli.retireRevokedSession()
 
 		// Limpar cache de userInfo para esta instância
 		mycli.userInfoCache.Delete(mycli.Instance.Token)
@@ -1919,14 +1969,14 @@ func (mycli *MyClient) handleEvent(rawEvt interface{}) {
 			mycli.loggerWrapper.GetLogger(mycli.userID).LogError("[%s] Error updating instance: %s", mycli.Instance.Id, err)
 		}
 
-		if mycli.run != nil && mycli.run.paired.Load() {
+		if mycli.run != nil && mycli.run.paired.Load() && !mycli.run.loggedOut.Load() {
 			if svc, ok := mycli.service.(*whatsmeowService); ok {
 				if err := svc.sessions.reconnect(mycli.userID, mycli.run, func(ctx context.Context) (*ClientData, error) {
 					inst, err := svc.instanceRepository.GetInstanceByIDContext(ctx, mycli.userID)
 					if err != nil {
 						return nil, err
 					}
-					return &ClientData{Instance: inst, Subscriptions: strings.Split(inst.Events, ","), IsProxy: inst.Proxy != "" || svc.config.ProxyHost != ""}, nil
+					return &ClientData{Instance: inst, Subscriptions: strings.Split(inst.Events, ","), IsProxy: sessionProxyEnabled(inst.Proxy, svc.config.ProxyHost)}, nil
 				}, svc.runClient); err != nil {
 					mycli.loggerWrapper.GetLogger(mycli.userID).LogError("[%s] Reconnect rejected: %v", mycli.userID, err)
 				}

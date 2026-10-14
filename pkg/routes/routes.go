@@ -61,9 +61,12 @@ func (r *Routes) AssignRoutes(eng *gin.Engine) {
 
 	eng.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	eng.GET("/favicon.ico", func(c *gin.Context) {
+	noContent := func(c *gin.Context) {
 		c.Status(http.StatusNoContent)
-	})
+	}
+	eng.GET("/favicon.ico", noContent)
+	// Vite's default favicon is referenced by the built manager and is not shipped.
+	eng.GET("/vite.svg", noContent)
 
 	// Rotas para o gerenciador React (sem autenticação)
 	eng.Static("/assets", "./manager/dist/assets")

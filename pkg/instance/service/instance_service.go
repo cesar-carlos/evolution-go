@@ -381,7 +381,21 @@ func (i instances) GetQr(instance *instance_model.Instance) (*QrcodeStruct, erro
 		// Aguardar um pouco para o cliente iniciar e gerar QR code
 		logger.LogInfo("[%s] Waiting for QR code generation...", instance.Id)
 		if _, err := i.whatsmeowService.WaitPairing(context.Background(), instance.Id); err != nil {
-			return nil, err
+			if !errors.Is(err, whatsmeow_service.ErrSessionEnded) {
+				return nil, err
+			}
+			fresh, loadErr := i.instanceRepository.GetInstanceByID(instance.Id)
+			if loadErr != nil || fresh.Jid != "" || instance.Jid == "" {
+				return nil, err
+			}
+			logger.LogInfo("[%s] Revoked session discarded, starting a new pairing", instance.Id)
+			if err = i.whatsmeowService.StartInstance(instance.Id); err != nil {
+				logger.LogError("[%s] Failed to start instance after logout: %v", instance.Id, err)
+				return nil, fmt.Errorf("failed to start instance: %w", err)
+			}
+			if _, err = i.whatsmeowService.WaitPairing(context.Background(), instance.Id); err != nil {
+				return nil, err
+			}
 		}
 
 		// Verificar novamente se há cliente

@@ -58,8 +58,14 @@ type sessionRun struct {
 	stopAction      func(*sessionRun) error
 	stopErr         error
 	paired          atomic.Bool
+	loggedOut       atomic.Bool
 	qrCount         atomic.Int32
 }
+
+// ErrSessionEnded is returned when a session stops before the transport or
+// pairing handshake finishes. A revoked device is cleared before this error
+// is reported, so a later connect can start a new QR.
+var ErrSessionEnded = errors.New("session ended before connecting")
 
 func (r *sessionRun) signalReady(err error) {
 	r.readyOnce.Do(func() { r.readyErr = err; close(r.ready) })
@@ -220,7 +226,7 @@ func (s *sessionRegistry) startLocked(ctx context.Context, slot *sessionSlot, cd
 					r.cleanup()
 				}
 				r.transportCancel()
-				r.signalReady(errors.New("session ended before connecting"))
+				r.signalReady(ErrSessionEnded)
 				slot.mu.Lock()
 				if slot.run == r {
 					slot.run = nil

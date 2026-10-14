@@ -427,3 +427,21 @@ go.mod/go.sum, configuração e modelos não mostrou mudanças; não há novas m
 de aplicação. Antes de reverter produção, conferir banco/sessões e backup conforme
 o [guia](MAINTENANCE.md). Não houve acesso ao banco nem implantação em produção.
 Pareamento, reconexão, passkey e renderização/cliques reais continuam pendentes.
+
+## F-021 — QR após logout remoto e favicon do Manager
+
+- Estado: `local`; comparação em 2026-10-14, base oficial `0.7.2`.
+- Problema/esperado: um 401 (`logged out from another device`) cancelava o contexto
+  da conexão durante o `DELETE` da sessão. O dispositivo e o JID permaneciam, o
+  polling de `/instance/qr` reconectava a sessão revogada e a API respondia
+  `session ended before connecting`, sem emitir QR. O HTML do Manager também
+  pedia `/vite.svg`, arquivo ausente no build.
+- Comportamento: o logout remoto apaga o dispositivo com um contexto próprio,
+  limpa JID e QR e impede a reconexão automática. A mesma consulta de QR inicia
+  um pareamento novo quando o JID foi descartado. `/vite.svg` e `/favicon.ico`
+  respondem 204; o HTML do Manager aponta para `/favicon.ico`.
+- Evidências: `session_logout_test.go` cobre descarte do JID, ausência de
+  reconexão e o placeholder de proxy `null`.
+- Limitações: o pareamento real com o celular continua dependente do WhatsApp.
+- Retirada: fluxo oficial que descarta a sessão revogada e gera QR sem reutilizar
+  o dispositivo removido.
