@@ -476,3 +476,21 @@ Pareamento, reconexão, passkey e renderização/cliques reais continuam pendent
 - Evidências: `TestArchiveEventDataIsJSONSafe`.
 - Limitações: o teste não publica o webhook.
 - Retirada: o handler oficial trata Archive sem assert do evento bruto.
+
+## F-024 — Alerta por e-mail quando a API ou as sessões permanecem fora
+
+- Estado: `exclusivo do fork`; comparação em 2026-11-03, base oficial `0.7.2`.
+- Problema/esperado: `/server/ok` continua saudável quando o WhatsApp recusa as
+  sessões. O aviso precisa observar a API e as instâncias pareadas de fora do
+  processo, porque um container parado não envia o próprio alerta.
+- Comportamento: `scripts/monitor/watch.py` lê a configuração de
+  `/etc/evolution-go-monitor.env`. A API sem resposta espera 2 minutos; a perda
+  total ou de metade das sessões conectadas espera 10 minutos, para um restart
+  reconectar. O mesmo episódio se repete depois de 6 horas. Duas leituras
+  saudáveis enviam a recuperação. Sem `MONITOR_SMTP_HOST` ou
+  `MONITOR_EMAIL_TO`, o aviso fica pendente e a tentativa seguinte reenvia.
+- Evidências: `scripts/monitor/test_watch.py`.
+- Limitações: a entrega depende de um SMTP informado pelo operador. O teste não
+  abre conexão nem consulta o banco.
+- Retirada: o fork deixar de operar um vigilante próprio para essas interrupções.
+
