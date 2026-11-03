@@ -445,3 +445,34 @@ Pareamento, reconexão, passkey e renderização/cliques reais continuam pendent
 - Limitações: o pareamento real com o celular continua dependente do WhatsApp.
 - Retirada: fluxo oficial que descarta a sessão revogada e gera QR sem reutilizar
   o dispositivo removido.
+
+## F-022 — Versão do handshake rejeitada com HTTP 405
+
+- Estado: `local`; comparação em 2026-11-03, base oficial `0.7.2`.
+- Problema/esperado: o WhatsApp fechava o websocket com `Client outdated (405)`
+  porque o handshake continuava na versão embutida na biblioteca
+  (`2.3000.1042386815`). A revisão obtida de `web.whatsapp.com/sw.js`, ou de
+  `WHATSAPP_VERSION_*`, só preenchia `DeviceProps.Version`. O handshake deve
+  anunciar essa mesma revisão em `UserAgent.AppVersion`.
+- Comportamento: `store.SetWAVersion` recebe a versão configurada ou a revisão
+  atual da web antes de abrir o cliente. Conexões simultâneas esperam essa
+  publicação. Sem as duas fontes, permanece o padrão da biblioteca. A leitura
+  da revisão aceita o JSON escapado do service worker e, se a página de erro
+  não trouxer o corpo, o parâmetro `cv` do cabeçalho.
+- Evidências: `web_version_test.go` cobre o service worker escapado, JSON simples,
+  revisão ausente e a atualização do payload de handshake.
+- Limitações: a versão é global no processo. A aceitação pelo WhatsApp depende
+  da revisão publicada na web e não é coberta por teste unitário.
+- Retirada: a biblioteca fixada já anuncia uma revisão aceita e o projeto deixa
+  de precisar sobrepor `UserAgent.AppVersion`.
+
+## F-023 — Evento Archive não pode entrar em panic
+
+- Estado: `local`; comparação em 2026-11-03, base oficial `0.7.2`.
+- Problema/esperado: o handler fazia type assert de `postMap["data"]` para
+  `map[string]interface{}`, mas o valor ainda era `*events.Archive`. O evento
+  encerrava com panic e não seguia para o webhook.
+- Comportamento: o payload de Archive é montado como mapa JSON, com JID em texto.
+- Evidências: `TestArchiveEventDataIsJSONSafe`.
+- Limitações: o teste não publica o webhook.
+- Retirada: o handler oficial trata Archive sem assert do evento bruto.

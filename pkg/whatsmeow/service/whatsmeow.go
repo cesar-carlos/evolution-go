@@ -352,7 +352,6 @@ func (w whatsmeowService) runClient(run *sessionRun) {
 		}
 	}
 
-	var version clientVersion
 	deviceProps := proto.Clone(store.DeviceProps).(*waCompanionReg.DeviceProps)
 
 	platformID, ok := waCompanionReg.DeviceProps_PlatformType_value[strings.ToUpper("chrome")]
@@ -366,32 +365,13 @@ func (w whatsmeowService) runClient(run *sessionRun) {
 	deviceProps.Os = &cd.Instance.OsName
 	deviceProps.RequireFullSync = proto.Bool(true)
 
-	if w.config.WhatsappVersionMajor != 0 && w.config.WhatsappVersionMinor != 0 && w.config.WhatsappVersionPatch != 0 {
-		w.loggerWrapper.GetLogger(cd.Instance.Id).LogInfo("[%s] Setting whatsapp version to %d.%d.%d", cd.Instance.Id, w.config.WhatsappVersionMajor, w.config.WhatsappVersionMinor, w.config.WhatsappVersionPatch)
-		version.Major = w.config.WhatsappVersionMajor
-		if err == nil {
-			deviceProps.Version.Primary = proto.Uint32(uint32(version.Major))
-		}
-		version.Minor = w.config.WhatsappVersionMinor
-		if err == nil {
-			deviceProps.Version.Secondary = proto.Uint32(uint32(version.Minor))
-		}
-		version.Patch = w.config.WhatsappVersionPatch
-		if err == nil {
-			deviceProps.Version.Tertiary = proto.Uint32(uint32(version.Patch))
-		}
-	} else {
-		// Try to fetch version from WhatsApp Web
-		webVersion, err := fetchWhatsAppWebVersion(run.ctx)
-		if err != nil {
-			w.loggerWrapper.GetLogger(cd.Instance.Id).LogError("[%s] Failed to fetch WhatsApp Web version: %v", cd.Instance.Id, err)
-		} else {
-			w.loggerWrapper.GetLogger(cd.Instance.Id).LogInfo("[%s] Setting whatsapp version from web to %d.%d.%d", cd.Instance.Id, webVersion.Major, webVersion.Minor, webVersion.Patch)
-			version = *webVersion
-			deviceProps.Version.Primary = proto.Uint32(uint32(version.Major))
-			deviceProps.Version.Secondary = proto.Uint32(uint32(version.Minor))
-			deviceProps.Version.Tertiary = proto.Uint32(uint32(version.Patch))
-		}
+	version, versionSource, versionErr := w.ensureWhatsAppClientVersion(run.ctx)
+	if versionErr != nil {
+		w.loggerWrapper.GetLogger(cd.Instance.Id).LogError("[%s] Failed to fetch WhatsApp Web version: %v", cd.Instance.Id, versionErr)
+	}
+	if !version.isZero() {
+		w.loggerWrapper.GetLogger(cd.Instance.Id).LogInfo("[%s] Setting whatsapp version from %s to %d.%d.%d", cd.Instance.Id, versionSource, version.Major, version.Minor, version.Patch)
+		applyWhatsAppClientVersion(deviceProps, version)
 	}
 
 	// 🔒 FIX: Sempre criar logger, mesmo que WaDebug esteja vazio
@@ -1798,13 +1778,7 @@ func (mycli *MyClient) handleEvent(rawEvt interface{}) {
 	case *events.Archive:
 		doWebhook = true
 		postMap["event"] = "Archive"
-
-		dataMap := postMap["data"].(map[string]interface{})
-		dataMap["JID"] = evt.JID
-		dataMap["Timestamp"] = evt.Timestamp
-		dataMap["Action"] = evt.Action
-		dataMap["FromFullSync"] = evt.FromFullSync
-		postMap["data"] = dataMap
+		postMap["data"] = archiveEventData(evt)
 
 		mycli.loggerWrapper.GetLogger(mycli.userID).LogInfo("[%s] Chat archived", mycli.userID)
 	case *events.HistorySync:
@@ -2422,6 +2396,12 @@ func (w whatsmeowService) StartInstanceContext(ctx context.Context, instanceId s
 
 func (w whatsmeowService) ConnectOnStartup(clientName string) {
 	w.loggerWrapper.GetLogger(clientName).LogInfo("Connecting all instances on startup")
+	versionCtx, cancelVersion := context.WithTimeout(context.Background(), 15*time.Second)
+	_, _, versionErr := w.ensureWhatsAppClientVersion(versionCtx)
+	cancelVersion()
+	if versionErr != nil {
+		w.loggerWrapper.GetLogger(clientName).LogError("Failed to fetch WhatsApp Web version before startup: %v", versionErr)
+	}
 	var instances []*instance_model.Instance
 	var err error
 
@@ -2619,7 +2599,139 @@ var (
 	cachedWebVersionAt time.Time
 	cachedWebVersionMu sync.Mutex
 	webVersionCacheTTL = 1 * time.Hour
+
+	// whatsAppClientRevisionPatterns matches the client_revision embedded in
+	// https://web.whatsapp.com/sw.js, both as plain JSON and as an escaped string.
+	whatsAppClientRevisionPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`"client_revision"\s*:\s*(\d+)`),
+		regexp.MustCompile(`\\"client_revision\\"\s*:\s*(\d+)`),
+		regexp.MustCompile(`client_revision\\?"?\s*:\s*\\?"?(\d+)`),
+	}
+	whatsAppHeaderRevision = regexp.MustCompile(`(?:\?|&)cv=(\d+)`)
+
+	publishedWAVersionMu     sync.Mutex
+	publishedWAVersion       clientVersion
+	publishedWAVersionSource string
+	publishedWAVersionOK     bool
 )
+
+func (version clientVersion) isZero() bool {
+	return version.Major == 0 && version.Minor == 0 && version.Patch == 0
+}
+
+// resolveWhatsAppClientVersion returns the version advertised to WhatsApp.
+// An explicit WHATSAPP_VERSION_* configuration wins. Otherwise the current
+// WhatsApp Web revision is used. The library default stays in place when both
+// are unavailable.
+func (w whatsmeowService) resolveWhatsAppClientVersion(ctx context.Context) (clientVersion, string, error) {
+	if w.config.WhatsappVersionMajor != 0 && w.config.WhatsappVersionMinor != 0 && w.config.WhatsappVersionPatch != 0 {
+		return clientVersion{
+			Major: w.config.WhatsappVersionMajor,
+			Minor: w.config.WhatsappVersionMinor,
+			Patch: w.config.WhatsappVersionPatch,
+		}, "config", nil
+	}
+	webVersion, err := fetchWhatsAppWebVersion(ctx)
+	if err != nil {
+		return clientVersion{}, "", err
+	}
+	return *webVersion, "web", nil
+}
+
+// ensureWhatsAppClientVersion publishes the handshake version before any
+// caller connects. Concurrent startups wait for the same result, so a socket
+// cannot open on the library default while the web revision is still loading.
+func (w whatsmeowService) ensureWhatsAppClientVersion(ctx context.Context) (clientVersion, string, error) {
+	publishedWAVersionMu.Lock()
+	defer publishedWAVersionMu.Unlock()
+	if publishedWAVersionOK {
+		return publishedWAVersion, publishedWAVersionSource, nil
+	}
+	version, source, err := w.resolveWhatsAppClientVersion(ctx)
+	if err != nil || version.isZero() {
+		return version, source, err
+	}
+	store.SetWAVersion(store.WAVersionContainer{
+		uint32(version.Major),
+		uint32(version.Minor),
+		uint32(version.Patch),
+	})
+	publishedWAVersion = version
+	publishedWAVersionSource = source
+	publishedWAVersionOK = true
+	return version, source, nil
+}
+
+func resetPublishedWhatsAppClientVersion() {
+	publishedWAVersionMu.Lock()
+	publishedWAVersion = clientVersion{}
+	publishedWAVersionSource = ""
+	publishedWAVersionOK = false
+	publishedWAVersionMu.Unlock()
+}
+
+// applyWhatsAppClientVersion updates the companion registration props and the
+// process-wide handshake version. WhatsApp rejects the socket with HTTP 405
+// when UserAgent.AppVersion is older than the web client, which is separate
+// from DeviceProps.Version.
+func applyWhatsAppClientVersion(deviceProps *waCompanionReg.DeviceProps, version clientVersion) {
+	primary := uint32(version.Major)
+	secondary := uint32(version.Minor)
+	tertiary := uint32(version.Patch)
+	deviceProps.Version.Primary = proto.Uint32(primary)
+	deviceProps.Version.Secondary = proto.Uint32(secondary)
+	deviceProps.Version.Tertiary = proto.Uint32(tertiary)
+	store.SetWAVersion(store.WAVersionContainer{primary, secondary, tertiary})
+}
+
+func archiveEventData(evt *events.Archive) map[string]interface{} {
+	if evt == nil {
+		return map[string]interface{}{}
+	}
+	return map[string]interface{}{
+		"JID":          evt.JID.String(),
+		"Timestamp":    evt.Timestamp,
+		"Action":       evt.Action,
+		"FromFullSync": evt.FromFullSync,
+	}
+}
+
+func parseWhatsAppWebVersion(content string) (clientVersion, bool) {
+	for _, pattern := range whatsAppClientRevisionPatterns {
+		matches := pattern.FindStringSubmatch(content)
+		if len(matches) < 2 {
+			continue
+		}
+		revision, err := strconv.Atoi(matches[1])
+		if err != nil || revision <= 0 {
+			continue
+		}
+		return clientVersion{Major: 2, Minor: 3000, Patch: revision}, true
+	}
+	return clientVersion{}, false
+}
+
+func whatsAppWebVersionFromFetch(header http.Header, body string) (clientVersion, bool) {
+	if version, ok := parseWhatsAppWebVersion(body); ok {
+		return version, true
+	}
+	var headerText strings.Builder
+	for _, key := range []string{"Reporting-Endpoints", "Report-To"} {
+		for _, value := range header.Values(key) {
+			headerText.WriteString(value)
+			headerText.WriteByte(' ')
+		}
+	}
+	matches := whatsAppHeaderRevision.FindStringSubmatch(headerText.String())
+	if len(matches) < 2 {
+		return clientVersion{}, false
+	}
+	revision, err := strconv.Atoi(matches[1])
+	if err != nil || revision <= 0 {
+		return clientVersion{}, false
+	}
+	return clientVersion{Major: 2, Minor: 3000, Patch: revision}, true
+}
 
 func fetchWhatsAppWebVersion(ctx context.Context) (*clientVersion, error) {
 	cachedWebVersionMu.Lock()
@@ -2637,6 +2749,7 @@ func fetchWhatsAppWebVersion(ctx context.Context) (*clientVersion, error) {
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("User-Agent", "Mozilla/5.0")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch WhatsApp Web version: %v", err)
@@ -2649,39 +2762,14 @@ func fetchWhatsAppWebVersion(ctx context.Context) (*clientVersion, error) {
 	}
 
 	content := string(body)
-
-	// Múltiplas estratégias para encontrar client_revision
-	patterns := []string{
-		`"client_revision":\s*(\d+)`,              // Formato direto
-		`\\"client_revision\\":\s*(\d+)`,          // Formato escaped
-		`client_revision\\?\\"?:[\s]*(\d+)`,       // Formato mais flexível
-		`["']client_revision["'][\s]*:[\s]*(\d+)`, // Com aspas variadas
-	}
-
-	for _, pattern := range patterns {
-		re := regexp.MustCompile(pattern)
-		matches := re.FindStringSubmatch(content)
-
-		if len(matches) >= 2 {
-			clientRevision, err := strconv.Atoi(matches[1])
-			if err != nil {
-				continue // Tenta próximo padrão
-			}
-
-			// Log qual padrão funcionou
-			if clientRevision > 0 {
-				cachedWebVersionMu.Lock()
-				cachedWebVersion = &clientVersion{
-					Major: 2,
-					Minor: 3000,
-					Patch: clientRevision,
-				}
-				cachedWebVersionAt = time.Now()
-				version := *cachedWebVersion
-				cachedWebVersionMu.Unlock()
-				return &version, nil
-			}
-		}
+	parsed, ok := whatsAppWebVersionFromFetch(resp.Header, content)
+	if ok {
+		cachedWebVersionMu.Lock()
+		cachedWebVersion = &parsed
+		cachedWebVersionAt = time.Now()
+		version := *cachedWebVersion
+		cachedWebVersionMu.Unlock()
+		return &version, nil
 	}
 
 	// Se chegou aqui, nenhum padrão funcionou - log do conteúdo para debug
