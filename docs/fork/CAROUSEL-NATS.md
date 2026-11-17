@@ -1,7 +1,8 @@
 # Carrossel e cliques no NATS global
 
-Correções sobre `0.7.3-cesar.1`, na branch `codex/fix-carousel-nats`,
-ainda sem release própria e sem implantação em produção.
+Correções integradas pelo [PR #19](https://github.com/cesar-carlos/evolution-go/pull/19),
+incluídas na release `0.7.3-cesar.2`. A publicação não implica implantação;
+consulte os registros de releases e de produção.
 
 ## POST /send/carousel
 

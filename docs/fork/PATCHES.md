@@ -613,7 +613,7 @@ código ou merge adicional foi necessário.
 ## F-026 — Validação e falhas de mídia no carrossel
 
 - Estado: `local`; revisão em 2026-11-17 sobre main `8e3bff1`, base oficial 0.7.3.
-- Implementação: branch `codex/fix-carousel-nats`; ainda sem release própria.
+- Implementação: `8421648`, [PR #19](https://github.com/cesar-carlos/evolution-go/pull/19), integrado em `19816da`; release `0.7.3-cesar.2`.
 - Problema: falhas HTTP/upload ignoradas, leitura sem limite, tipos desconhecidos
   convertidos em REPLY, campos URL/CALL ignorados e panic no corpo JSON nulo.
 - Correção: preparação cancelável e limitada, aborta no erro de mídia; validação
@@ -631,7 +631,7 @@ código ou merge adicional foi necessário.
 ## F-027 — BUTTON_CLICK no NATS global
 
 - Estado: `local`; revisão em 2026-11-17 sobre main `8e3bff1`, base oficial 0.7.3.
-- Implementação: branch `codex/fix-carousel-nats`; ainda sem release própria.
+- Implementação: `8421648`, [PR #19](https://github.com/cesar-carlos/evolution-go/pull/19), integrado em `19816da`; release `0.7.3-cesar.2`.
 - Problema: assinatura BUTTON_CLICK aceita, mas sem mapeamento no dispatch global.
 - Correção: ButtonClick mapeia para BUTTON_CLICK, publica no subject buttonclick
   apenas quando habilitado e assinado; preserva payload e identificação.
@@ -647,3 +647,11 @@ Validação conjunta de F-026/F-027: build/vet/testes/race completos da aplicaç
 e testes/race da biblioteca fixada aprovados em Docker Linux/Go 1.26.10, com
 PostgreSQL 16 descartável e SQLite temporário. Swagger regenerado por make
 (swag v1.16.3), links e diff conferidos; detalhes em [CAROUSEL-NATS.md](CAROUSEL-NATS.md).
+
+## Release 0.7.3-cesar.2
+
+Preserva a base oficial 0.7.3, a dependência Whatsmeow e todos os patches
+anteriores; adiciona F-026/F-027. Não há novas dependências, variáveis ou migrações
+de banco em relação a 0.7.3-cesar.1. A validação do carrossel é mais estrita;
+consulte [contrato e migração](CAROUSEL-NATS.md). Publicação e implantação devem
+ser verificadas e registradas separadamente pelo digest.
