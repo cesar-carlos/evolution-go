@@ -624,7 +624,7 @@ código ou merge adicional foi necessário.
 - Evidências: `carousel_test.go`, `interactive_validation_test.go`; cenários de
   erro, cancelamento, contratos antigos/aliases e preservação do payload.
 - Contrato/migração/limitações: [CAROUSEL-NATS.md](CAROUSEL-NATS.md).
-  Sem homologação em aparelho e sem alteração da versão em produção.
+  Sem homologação em aparelho; publicação registrada abaixo.
 - Retirada: upstream equivalente em validação, recursos e serialização, comprovado
   pelas regressões e homologação real de envio/cliques.
 
@@ -655,3 +655,5 @@ anteriores; adiciona F-026/F-027. Não há novas dependências, variáveis ou mi
 de banco em relação a 0.7.3-cesar.1. A validação do carrossel é mais estrita;
 consulte [contrato e migração](CAROUSEL-NATS.md). Publicação e implantação devem
 ser verificadas e registradas separadamente pelo digest.
+
+Publicação 0.7.3-cesar.2 verificada em 2026-11-17: [evidência da imagem](releases/v0.7.3-cesar.2.json). Workflow aprovado e pulls anônimos amd64/arm64 confirmados pelo digest.

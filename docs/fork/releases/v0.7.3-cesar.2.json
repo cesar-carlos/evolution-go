@@ -1,0 +1,55 @@
+{
+  "version": "0.7.3-cesar.2",
+  "tag": "v0.7.3-cesar.2",
+  "date": "2026-11-17",
+  "commit": "e98dd74e60814681dac292082f155a22ecd7e20d",
+  "upstream": {
+    "repository": "evolution-foundation/evolution-go",
+    "tag": "0.7.3",
+    "sha": "80d7c72c0727e091425d10f5654b7ccf07e01abe"
+  },
+  "image": "ghcr.io/cesar-carlos/evolution-go",
+  "digest": "sha256:8f169294d378ef464f0a3fc7d9f8bc710bbf4f5dbf6a1a72a55bbfa892d8884b",
+  "platforms": [
+    "linux/amd64",
+    "linux/arm64"
+  ],
+  "aliases": [
+    "0.7.3-cesar.2",
+    "sha-e98dd74e60814681dac292082f155a22ecd7e20d"
+  ],
+  "latest_alias_published": false,
+  "release": "https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.3-cesar.2",
+  "workflow": "https://github.com/cesar-carlos/evolution-go/actions/runs/44189961939",
+  "previous_release": {
+    "tag": "v0.7.3-cesar.1",
+    "digest": "sha256:9ad6344a6df7b8da357395202d2c7fec790910e2033979b118b9104030d43084"
+  },
+  "verification": {
+    "status": "verified",
+    "main_quality": "https://github.com/cesar-carlos/evolution-go/actions/runs/44189542538",
+    "main_quality_result": "success",
+    "release_workflow_result": "success",
+    "workflow_attempt": 1,
+    "anonymous_http_manifest": true,
+    "anonymous_pull": true,
+    "anonymous_pull_platforms": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "anonymous_config": "Fresh directory containing only config.json with {}",
+    "version_and_sha_aliases_match_digest": true,
+    "previous_release_digest_preserved": true,
+    "manifest_revision_version_source_and_upstream_verified": true,
+    "runtime_smoke_checks": [
+      "linux/amd64",
+      "linux/arm64"
+    ]
+  },
+  "migration": {
+    "changes_since_previous_release": "No dependency, environment or database schema changes; stricter carousel validation documented in CAROUSEL-NATS.md"
+  },
+  "limitations": {
+    "real_whatsapp_homologation_executed": false
+  }
+}
