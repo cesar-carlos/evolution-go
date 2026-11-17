@@ -586,3 +586,11 @@ v1.16.3; actionlint 1.7.9; formatação dos Go alterados e `git diff --check`.
 Os resultados locais não substituem os checks do commit final no GitHub.
 Homologação real de WhatsApp, envio interativo e implantação continuam pendentes.
 
+Auditoria adicional em 2026-11-17: as sete branches de contribuição foram
+comparadas com a main `98bcc1f` e o PR #17 `2cf0b13`. Nenhum complemento de
+F-001–F-006 ou F-019/F-020 ficou ausente; implementações, pontos de integração
+e regressões estão registrados em [BRANCH-AUDIT-0.7.3.md](BRANCH-AUDIT-0.7.3.md).
+Build/vet completos e testes/race com `-count=1` passaram novamente em Linux,
+incluindo PostgreSQL 16 descartável e SQLite temporário. Nenhuma mudança de
+código ou merge adicional foi necessário.
+
