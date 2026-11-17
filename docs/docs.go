@@ -3667,9 +3667,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "success",
+                        "description": "success; Items replaces JIDs since 0.7.3",
                         "schema": {
-                            "$ref": "#/definitions/gin.H"
+                            "$ref": "#/definitions/pkg_user_handler.BlocklistResponse"
                         }
                     },
                     "400": {
@@ -3702,9 +3702,9 @@ const docTemplate = `{
                 "summary": "Get a user's block list",
                 "responses": {
                     "200": {
-                        "description": "success",
+                        "description": "success; Items replaces JIDs since 0.7.3",
                         "schema": {
-                            "$ref": "#/definitions/gin.H"
+                            "$ref": "#/definitions/pkg_user_handler.BlocklistResponse"
                         }
                     },
                     "500": {
@@ -4080,9 +4080,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "success",
+                        "description": "success; Items replaces JIDs since 0.7.3",
                         "schema": {
-                            "$ref": "#/definitions/gin.H"
+                            "$ref": "#/definitions/pkg_user_handler.BlocklistResponse"
                         }
                     },
                     "400": {
@@ -5550,6 +5550,48 @@ const docTemplate = `{
                 }
             }
         },
+        "pkg_user_handler.BlocklistData": {
+            "type": "object",
+            "properties": {
+                "AddressingMode": {
+                    "type": "string"
+                },
+                "DHash": {
+                    "type": "string"
+                },
+                "Items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/pkg_user_handler.BlocklistItem"
+                    }
+                }
+            }
+        },
+        "pkg_user_handler.BlocklistItem": {
+            "type": "object",
+            "properties": {
+                "Active": {
+                    "type": "boolean"
+                },
+                "LID": {
+                    "type": "string"
+                },
+                "PN": {
+                    "type": "string"
+                }
+            }
+        },
+        "pkg_user_handler.BlocklistResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/pkg_user_handler.BlocklistData"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "pkg_user_handler.UserInfoResponse": {
             "type": "object",
             "properties": {
@@ -5577,12 +5619,14 @@ const docTemplate = `{
             "enum": [
                 "first",
                 "inner",
-                "last"
+                "last",
+                "full"
             ],
             "x-enum-varnames": [
                 "EditTypeFirst",
                 "EditTypeInner",
-                "EditTypeLast"
+                "EditTypeLast",
+                "EditTypeFull"
             ]
         },
         "types.BroadcastRecipient": {
@@ -5708,6 +5752,10 @@ const docTemplate = `{
                     "description": "Whether the chat is a group chat or broadcast list.",
                     "type": "boolean"
                 },
+                "isNewsletterStatus": {
+                    "description": "IsNewsletterStatus reports that the message arrived on a newsletter status node.",
+                    "type": "boolean"
+                },
                 "mediaType": {
                     "type": "string"
                 },
@@ -5764,6 +5812,10 @@ const docTemplate = `{
         "types.MsgBotInfo": {
             "type": "object",
             "properties": {
+                "clientThreadID": {
+                    "description": "For messages sent to bots",
+                    "type": "string"
+                },
                 "editSenderTimestampMS": {
                     "type": "string"
                 },
@@ -5829,11 +5881,26 @@ const docTemplate = `{
         "types.VerifiedName": {
             "type": "object",
             "properties": {
+                "actualActors": {
+                    "type": "integer"
+                },
                 "certificate": {
                     "$ref": "#/definitions/waVnameCert.VerifiedNameCertificate"
                 },
                 "details": {
                     "$ref": "#/definitions/waVnameCert.VerifiedNameCertificate_Details"
+                },
+                "hostStorage": {
+                    "type": "integer"
+                },
+                "privacyModeTS": {
+                    "type": "string"
+                },
+                "verifiedLevel": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
                 }
             }
         },
@@ -5914,8 +5981,33 @@ const docTemplate = `{
         "waAICommon.AIMetadataOperation": {
             "type": "object",
             "properties": {
+                "bizAiMetadataSync": {
+                    "$ref": "#/definitions/waAICommon.BizAIMetadataSync"
+                },
                 "hatchMetadataSync": {
                     "$ref": "#/definitions/waAICommon.HatchMetadataSync"
+                }
+            }
+        },
+        "waAICommon.AIProvenance": {
+            "type": "object",
+            "properties": {
+                "c2PaMetadata": {
+                    "$ref": "#/definitions/waAICommon.AIProvenance_Metadata"
+                },
+                "iptcMetadata": {
+                    "$ref": "#/definitions/waAICommon.AIProvenance_Metadata"
+                }
+            }
+        },
+        "waAICommon.AIProvenance_Metadata": {
+            "type": "object",
+            "properties": {
+                "createdWithGenAi": {
+                    "type": "boolean"
+                },
+                "editedWithGenAi": {
+                    "type": "boolean"
                 }
             }
         },
@@ -5992,13 +6084,15 @@ const docTemplate = `{
                 0,
                 1,
                 2,
-                3
+                3,
+                4
             ],
             "x-enum-varnames": [
                 "AIThreadInfo_AIThreadClientInfo_UNKNOWN",
                 "AIThreadInfo_AIThreadClientInfo_DEFAULT",
                 "AIThreadInfo_AIThreadClientInfo_INCOGNITO",
-                "AIThreadInfo_AIThreadClientInfo_SIDE_CHAT"
+                "AIThreadInfo_AIThreadClientInfo_SIDE_CHAT",
+                "AIThreadInfo_AIThreadClientInfo_PRIVATE_SEARCH_CHAT"
             ]
         },
         "waAICommon.AIThreadInfo_AIThreadServerInfo": {
@@ -6006,6 +6100,14 @@ const docTemplate = `{
             "properties": {
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "waAICommon.BizAIMetadataSync": {
+            "type": "object",
+            "properties": {
+                "operation": {
+                    "description": "Types that are valid to be assigned to Operation:\n\n\t*BizAIMetadataSync_ServerEvent_"
                 }
             }
         },
@@ -6037,6 +6139,12 @@ const docTemplate = `{
         "waAICommon.BotAgentDeepLinkMetadata": {
             "type": "object",
             "properties": {
+                "clientPublicKey": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "token": {
                     "type": "string"
                 }
@@ -6129,7 +6237,24 @@ const docTemplate = `{
                 62,
                 63,
                 64,
-                65
+                65,
+                66,
+                67,
+                68,
+                69,
+                70,
+                71,
+                72,
+                73,
+                74,
+                75,
+                76,
+                77,
+                78,
+                79,
+                80,
+                81,
+                82
             ],
             "x-enum-varnames": [
                 "BotCapabilityMetadata_UNKNOWN",
@@ -6197,7 +6322,24 @@ const docTemplate = `{
                 "BotCapabilityMetadata_UNIFIED_RESPONSE_AI_CONTENT_SEARCH_ENABLED",
                 "BotCapabilityMetadata_UNIFIED_RESPONSE_MARKDOWN_LINKS_ENABLED",
                 "BotCapabilityMetadata_AI_RICH_RESPONSE_MAPS_V2_ENABLED",
-                "BotCapabilityMetadata_AI_SUBSCRIPTION_METERING_ENABLED"
+                "BotCapabilityMetadata_AI_SUBSCRIPTION_METERING_ENABLED",
+                "BotCapabilityMetadata_RICH_RESPONSE_SPORTS_WIDGET_ENABLED",
+                "BotCapabilityMetadata_AI_RICH_RESPONSE_ARTIFACTS_ENABLED",
+                "BotCapabilityMetadata_AI_RICH_RESPONSE_EMAIL_CALENDAR_ENABLED",
+                "BotCapabilityMetadata_AI_RICH_RESPONSE_REMINDERS_ENABLED",
+                "BotCapabilityMetadata_AI_STOP_GENERATION_ENABLED",
+                "BotCapabilityMetadata_AI_RICH_RESPONSE_3P_LINKING_CARD_ENABLED",
+                "BotCapabilityMetadata_HATCH_NOTIFICATION_METADATA_EVENT_ENABLED",
+                "BotCapabilityMetadata_AI_SUGGESTED_REPLIES_ENABLED",
+                "BotCapabilityMetadata_RICH_RESPONSE_IN_APP_SURVEY_BLOKS",
+                "BotCapabilityMetadata_RICH_RESPONSE_IMAGE_SOURCE_ATTRIBUTION",
+                "BotCapabilityMetadata_HATCH_CONNECTOR_ACTION_CARD_ENABLED",
+                "BotCapabilityMetadata_HATCH_SECURE_CREDENTIAL_CARD_ENABLED",
+                "BotCapabilityMetadata_HATCH_BROWSER_TASK_CARD_ENABLED",
+                "BotCapabilityMetadata_HATCH_ARTIFACT_CARD_ENABLED",
+                "BotCapabilityMetadata_AI_STUDY_CENTER_ENABLED",
+                "BotCapabilityMetadata_AI_MUSE_JARVIS_SCHEMA_ENABLED",
+                "BotCapabilityMetadata_AI_STUDY_QUIZ_ENABLED"
             ]
         },
         "waAICommon.BotCommandMetadata": {
@@ -6445,6 +6587,17 @@ const docTemplate = `{
                 }
             }
         },
+        "waAICommon.BotHistoryShareMetadata": {
+            "type": "object",
+            "properties": {
+                "participantsMetadata": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/waAICommon.BotGroupParticipantMetadata"
+                    }
+                }
+            }
+        },
         "waAICommon.BotImagineMetadata": {
             "type": "object",
             "properties": {
@@ -6641,10 +6794,12 @@ const docTemplate = `{
         "waAICommon.BotMessageOrigin_BotMessageOriginType": {
             "type": "integer",
             "enum": [
-                0
+                0,
+                1
             ],
             "x-enum-varnames": [
-                "BotMessageOrigin_BOT_MESSAGE_ORIGIN_TYPE_AI_INITIATED"
+                "BotMessageOrigin_BOT_MESSAGE_ORIGIN_TYPE_AI_INITIATED",
+                "BotMessageOrigin_BOT_MESSAGE_ORIGIN_TYPE_META_AI_THREAD_WELCOME"
             ]
         },
         "waAICommon.BotMessageSharingInfo": {
@@ -6678,6 +6833,9 @@ const docTemplate = `{
                 },
                 "botGroupMetadata": {
                     "$ref": "#/definitions/waAICommon.BotGroupMetadata"
+                },
+                "botHistoryShareMetadata": {
+                    "$ref": "#/definitions/waAICommon.BotHistoryShareMetadata"
                 },
                 "botInfrastructureDiagnostics": {
                     "$ref": "#/definitions/waAICommon.BotInfrastructureDiagnostics"
@@ -6769,6 +6927,9 @@ const docTemplate = `{
                 "resolvedToolCallMetadata": {
                     "$ref": "#/definitions/waAICommon.BotResolvedToolCallMetadata"
                 },
+                "responseStoppedByUser": {
+                    "type": "boolean"
+                },
                 "richResponseSourcesMetadata": {
                     "$ref": "#/definitions/waAICommon.BotSourcesMetadata"
                 },
@@ -6845,7 +7006,10 @@ const docTemplate = `{
                 47,
                 54,
                 55,
-                56
+                56,
+                57,
+                58,
+                59
             ],
             "x-enum-varnames": [
                 "BotMetricsEntryPoint_UNDEFINED_ENTRY_POINT",
@@ -6895,7 +7059,10 @@ const docTemplate = `{
                 "BotMetricsEntryPoint_WEB_NAVIGATION_BAR",
                 "BotMetricsEntryPoint_GROUP_MEMBER",
                 "BotMetricsEntryPoint_CHATLIST_SEARCH",
-                "BotMetricsEntryPoint_NEW_CHAT_LIST"
+                "BotMetricsEntryPoint_NEW_CHAT_LIST",
+                "BotMetricsEntryPoint_CONTACTS_TAB",
+                "BotMetricsEntryPoint_NEW_3P_AGENT_CREATION",
+                "BotMetricsEntryPoint_SHARE"
             ]
         },
         "waAICommon.BotMetricsMetadata": {
@@ -7454,6 +7621,12 @@ const docTemplate = `{
                         }
                     }
                 },
+                "certificateChainSki": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/waAICommon.BotSignatureVerificationUseCaseProof_CertificateSKI"
+                    }
+                },
                 "signature": {
                     "type": "array",
                     "items": {
@@ -7474,14 +7647,32 @@ const docTemplate = `{
                 0,
                 1,
                 2,
-                3
+                3,
+                4,
+                5
             ],
             "x-enum-varnames": [
                 "BotSignatureVerificationUseCaseProof_UNSPECIFIED",
                 "BotSignatureVerificationUseCaseProof_WA_BOT_MSG",
                 "BotSignatureVerificationUseCaseProof_WA_TEE_BOT_MSG",
-                "BotSignatureVerificationUseCaseProof_P2P_PILLS"
+                "BotSignatureVerificationUseCaseProof_P2P_PILLS",
+                "BotSignatureVerificationUseCaseProof_WA_WAFFLE",
+                "BotSignatureVerificationUseCaseProof_WA_FEATURE_PKI"
             ]
+        },
+        "waAICommon.BotSignatureVerificationUseCaseProof_CertificateSKI": {
+            "type": "object",
+            "properties": {
+                "ski": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "useCase": {
+                    "$ref": "#/definitions/waAICommon.BotSignatureVerificationUseCaseProof_BotSignatureUseCase"
+                }
+            }
         },
         "waAICommon.BotSourcesMetadata": {
             "type": "object",
@@ -8128,6 +8319,44 @@ const docTemplate = `{
                 "ADVEncryptionType_HOSTED"
             ]
         },
+        "waAea.NonE2EEAttestation": {
+            "type": "object",
+            "properties": {
+                "accountType": {
+                    "$ref": "#/definitions/waAea.NonE2EEAttestation_AccountType"
+                }
+            }
+        },
+        "waAea.NonE2EEAttestation_AccountType": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2
+            ],
+            "x-enum-varnames": [
+                "NonE2EEAttestation_E2EE",
+                "NonE2EEAttestation_HYBRID_E2EE",
+                "NonE2EEAttestation_NON_E2EE"
+            ]
+        },
+        "waCommon.ACP2Setting": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "initiatedByMe": {
+                    "type": "boolean"
+                },
+                "settingTimestamp": {
+                    "type": "integer"
+                },
+                "trigger": {
+                    "$ref": "#/definitions/waCommon.LimitSharing_Trigger"
+                }
+            }
+        },
         "waCommon.LimitSharing": {
             "type": "object",
             "properties": {
@@ -8279,6 +8508,9 @@ const docTemplate = `{
                 },
                 "messageType": {
                     "$ref": "#/definitions/waAICommonDeprecated.AIRichResponseMessageType"
+                },
+                "originalRecipientMetadata": {
+                    "$ref": "#/definitions/waAICommon.AIRichResponseUnifiedResponse"
                 },
                 "submessages": {
                     "type": "array",
@@ -8509,6 +8741,23 @@ const docTemplate = `{
                 "BCallMessage_VIDEO"
             ]
         },
+        "waE2E.BotHistoryShareSyncMetadata": {
+            "type": "object",
+            "properties": {
+                "botJID": {
+                    "type": "string"
+                },
+                "historyShareCutoffTimestamp": {
+                    "type": "integer"
+                },
+                "historyShareMessages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/waE2E.HistoryShareMessageEntry"
+                    }
+                }
+            }
+        },
         "waE2E.ButtonsMessage": {
             "type": "object",
             "properties": {
@@ -8644,6 +8893,9 @@ const docTemplate = `{
                     "items": {
                         "type": "integer"
                     }
+                },
+                "callReason": {
+                    "type": "string"
                 },
                 "contextInfo": {
                     "$ref": "#/definitions/waE2E.ContextInfo"
@@ -8782,7 +9034,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "wallpaper": {
-                    "description": "Types that are valid to be assigned to Wallpaper:\n\n\t*ChatThemeSetting_DefaultWallpaper\n\t*ChatThemeSetting_SolidColor\n\t*ChatThemeSetting_StockImage\n\t*ChatThemeSetting_CustomImage"
+                    "description": "Types that are valid to be assigned to Wallpaper:\n\n\t*ChatThemeSetting_DefaultWallpaper\n\t*ChatThemeSetting_SolidColor\n\t*ChatThemeSetting_StockImage\n\t*ChatThemeSetting_CustomImage\n\t*ChatThemeSetting_AnimatedWallpaper"
                 }
             }
         },
@@ -8832,6 +9084,17 @@ const docTemplate = `{
                 },
                 "handoffNotificationText": {
                     "type": "string"
+                }
+            }
+        },
+        "waE2E.CoexConnectionDescriptor": {
+            "type": "object",
+            "properties": {
+                "product": {
+                    "type": "string"
+                },
+                "providerID": {
+                    "type": "integer"
                 }
             }
         },
@@ -8923,6 +9186,9 @@ const docTemplate = `{
                 "afterReadDuration": {
                     "type": "integer"
                 },
+                "aiProvenance": {
+                    "$ref": "#/definitions/waAICommon.AIProvenance"
+                },
                 "alwaysShowAdAttribution": {
                     "type": "boolean"
                 },
@@ -8989,6 +9255,12 @@ const docTemplate = `{
                         "type": "integer"
                     }
                 },
+                "experienceIDs": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "expiration": {
                     "type": "integer"
                 },
@@ -9018,6 +9290,9 @@ const docTemplate = `{
                 },
                 "groupSubject": {
                     "type": "string"
+                },
+                "instagramThreadLink": {
+                    "$ref": "#/definitions/waE2E.ContextInfo_InstagramThreadLink"
                 },
                 "isForwarded": {
                     "type": "boolean"
@@ -9059,6 +9334,9 @@ const docTemplate = `{
                     "$ref": "#/definitions/waE2E.ContextInfo_PartiallySelectedContent"
                 },
                 "participant": {
+                    "type": "string"
+                },
+                "partnerDeepLinkToken": {
                     "type": "string"
                 },
                 "placeholderKey": {
@@ -9179,6 +9457,9 @@ const docTemplate = `{
                     "items": {
                         "type": "integer"
                     }
+                },
+                "unauthenticatedBusinessMetadata": {
+                    "$ref": "#/definitions/waE2E.ContextInfo_BusinessInteractionPills_UnauthenticatedBusinessMetadata"
                 }
             }
         },
@@ -9244,6 +9525,23 @@ const docTemplate = `{
                 "ContextInfo_BusinessInteractionPills_SHOP",
                 "ContextInfo_BusinessInteractionPills_ORDER"
             ]
+        },
+        "waE2E.ContextInfo_BusinessInteractionPills_UnauthenticatedBusinessMetadata": {
+            "type": "object",
+            "properties": {
+                "businessCategory": {
+                    "type": "string"
+                },
+                "businessIsOpen": {
+                    "type": "boolean"
+                },
+                "businessIsOpenSnapshotMS": {
+                    "type": "integer"
+                },
+                "businessName": {
+                    "type": "string"
+                }
+            }
         },
         "waE2E.ContextInfo_BusinessMessageForwardInfo": {
             "type": "object",
@@ -9345,7 +9643,13 @@ const docTemplate = `{
                 "containsAutoReply": {
                     "type": "boolean"
                 },
+                "containsCtwaFlowsAutoLabel": {
+                    "type": "boolean"
+                },
                 "containsCtwaFlowsAutoReply": {
+                    "type": "boolean"
+                },
+                "containsCtwaPromo": {
                     "type": "boolean"
                 },
                 "ctaPayload": {
@@ -9353,6 +9657,24 @@ const docTemplate = `{
                 },
                 "ctwaClid": {
                     "type": "string"
+                },
+                "ctwaPromoAdEntryID": {
+                    "type": "string"
+                },
+                "ctwaPromoAdgroupID": {
+                    "type": "string"
+                },
+                "ctwaPromoOfferID": {
+                    "type": "string"
+                },
+                "ctwaPromoResponseExpiresAtSeconds": {
+                    "type": "integer"
+                },
+                "ctwaPromoResponseID": {
+                    "type": "string"
+                },
+                "ctwaPromoSchemaVersion": {
+                    "type": "integer"
                 },
                 "disableNudge": {
                     "type": "boolean"
@@ -9367,6 +9689,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "originalImageURL": {
+                    "type": "string"
+                },
+                "productID": {
                     "type": "string"
                 },
                 "ref": {
@@ -9509,6 +9834,14 @@ const docTemplate = `{
                 "ContextInfo_ForwardedNewsletterMessageInfo_LINK_CARD"
             ]
         },
+        "waE2E.ContextInfo_InstagramThreadLink": {
+            "type": "object",
+            "properties": {
+                "URL": {
+                    "type": "string"
+                }
+            }
+        },
         "waE2E.ContextInfo_PairedMediaType": {
             "type": "integer",
             "enum": [
@@ -9520,7 +9853,11 @@ const docTemplate = `{
                 5,
                 6,
                 7,
-                8
+                8,
+                9,
+                10,
+                11,
+                12
             ],
             "x-enum-varnames": [
                 "ContextInfo_NOT_PAIRED_MEDIA",
@@ -9531,7 +9868,11 @@ const docTemplate = `{
                 "ContextInfo_MOTION_PHOTO_PARENT",
                 "ContextInfo_MOTION_PHOTO_CHILD",
                 "ContextInfo_HEVC_VIDEO_PARENT",
-                "ContextInfo_HEVC_VIDEO_CHILD"
+                "ContextInfo_HEVC_VIDEO_CHILD",
+                "ContextInfo_AV1_VIDEO_PARENT",
+                "ContextInfo_AV1_VIDEO_CHILD",
+                "ContextInfo_STREAMED_VIDEO_PARENT",
+                "ContextInfo_STREAMED_VIDEO_CHILD"
             ]
         },
         "waE2E.ContextInfo_PartiallySelectedContent": {
@@ -9984,6 +10325,9 @@ const docTemplate = `{
                 "contextInfo": {
                     "$ref": "#/definitions/waE2E.ContextInfo"
                 },
+                "coverImageHandle": {
+                    "type": "string"
+                },
                 "endTime": {
                     "type": "integer"
                 },
@@ -9996,10 +10340,40 @@ const docTemplate = `{
                 "isCanceled": {
                     "type": "boolean"
                 },
+                "lastUpdatedTSUsec": {
+                    "type": "integer"
+                },
+                "locationName": {
+                    "type": "string"
+                },
                 "startTime": {
                     "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/waE2E.EventInviteMessage_EventStatus"
                 }
             }
+        },
+        "waE2E.EventInviteMessage_EventStatus": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+            ],
+            "x-enum-varnames": [
+                "EventInviteMessage_UNKNOWN",
+                "EventInviteMessage_ACTIVE",
+                "EventInviteMessage_CANCELED",
+                "EventInviteMessage_SUSPENDED",
+                "EventInviteMessage_DELETED",
+                "EventInviteMessage_LEFT_EVENT",
+                "EventInviteMessage_REMOVED_FROM_INVITE_LIST"
+            ]
         },
         "waE2E.EventMessage": {
             "type": "object",
@@ -10069,7 +10443,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/waE2E.VideoEndCard"
                     }
                 },
-                "faviconMMSMetadata": {
+                "faviconMmsMetadata": {
                     "$ref": "#/definitions/waE2E.MMSThumbnailMetadata"
                 },
                 "font": {
@@ -10235,6 +10609,9 @@ const docTemplate = `{
                 "businessProduct": {
                     "type": "string"
                 },
+                "connection": {
+                    "$ref": "#/definitions/waE2E.CoexConnectionDescriptor"
+                },
                 "opaqueClientData": {
                     "type": "array",
                     "items": {
@@ -10385,6 +10762,20 @@ const docTemplate = `{
                 },
                 "paramOneof": {
                     "description": "Types that are valid to be assigned to ParamOneof:\n\n\t*HighlyStructuredMessage_HSMLocalizableParameter_Currency\n\t*HighlyStructuredMessage_HSMLocalizableParameter_DateTime"
+                }
+            }
+        },
+        "waE2E.HistoryShareMessageEntry": {
+            "type": "object",
+            "properties": {
+                "messageSecretProof": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "stanzaID": {
+                    "type": "string"
                 }
             }
         },
@@ -11254,6 +11645,26 @@ const docTemplate = `{
                 }
             }
         },
+        "waE2E.MarkAsVerifiedAction": {
+            "type": "object",
+            "properties": {
+                "actionSeq": {
+                    "type": "integer"
+                },
+                "userJIDString": {
+                    "type": "string"
+                },
+                "verified": {
+                    "type": "boolean"
+                },
+                "verifiedIdentityKey": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
         "waE2E.MediaDomainInfo": {
             "type": "object",
             "properties": {
@@ -11312,6 +11723,9 @@ const docTemplate = `{
         "waE2E.Message": {
             "type": "object",
             "properties": {
+                "acp2SettingMessage": {
+                    "$ref": "#/definitions/waE2E.FutureProofMessage"
+                },
                 "albumMessage": {
                     "$ref": "#/definitions/waE2E.AlbumMessage"
                 },
@@ -11321,13 +11735,22 @@ const docTemplate = `{
                 "audioMessage": {
                     "$ref": "#/definitions/waE2E.AudioMessage"
                 },
+                "audioStickerMessage": {
+                    "$ref": "#/definitions/waE2E.FutureProofMessage"
+                },
                 "bcallMessage": {
                     "$ref": "#/definitions/waE2E.BCallMessage"
                 },
                 "botForwardedMessage": {
                     "$ref": "#/definitions/waE2E.FutureProofMessage"
                 },
+                "botGroupParticipantMessage": {
+                    "$ref": "#/definitions/waE2E.FutureProofMessage"
+                },
                 "botInvokeMessage": {
+                    "$ref": "#/definitions/waE2E.FutureProofMessage"
+                },
+                "botPlatformRegistrationSuccessMessage": {
                     "$ref": "#/definitions/waE2E.FutureProofMessage"
                 },
                 "botTaskMessage": {
@@ -11432,6 +11855,9 @@ const docTemplate = `{
                 "imageMessage": {
                     "$ref": "#/definitions/waE2E.ImageMessage"
                 },
+                "instantImageMessage": {
+                    "$ref": "#/definitions/waE2E.ImageMessage"
+                },
                 "interactiveMessage": {
                     "$ref": "#/definitions/waE2E.InteractiveMessage"
                 },
@@ -11471,13 +11897,13 @@ const docTemplate = `{
                 "messageHistoryNotice": {
                     "$ref": "#/definitions/waE2E.MessageHistoryNotice"
                 },
+                "musicMessage": {
+                    "$ref": "#/definitions/waE2E.MusicMessage"
+                },
                 "newsletterAdminInviteMessage": {
                     "$ref": "#/definitions/waE2E.NewsletterAdminInviteMessage"
                 },
                 "newsletterAdminProfileMessage": {
-                    "$ref": "#/definitions/waE2E.FutureProofMessage"
-                },
-                "newsletterAdminProfileMessageV2": {
                     "$ref": "#/definitions/waE2E.FutureProofMessage"
                 },
                 "newsletterAdminProfileStatusMessage": {
@@ -11485,6 +11911,9 @@ const docTemplate = `{
                 },
                 "newsletterFollowerInviteMessageV2": {
                     "$ref": "#/definitions/waE2E.NewsletterFollowerInviteMessage"
+                },
+                "newsletterScheduledMessage": {
+                    "$ref": "#/definitions/waE2E.FutureProofMessage"
                 },
                 "orderMessage": {
                     "$ref": "#/definitions/waE2E.OrderMessage"
@@ -11555,6 +11984,12 @@ const docTemplate = `{
                 "reactionMessage": {
                     "$ref": "#/definitions/waE2E.ReactionMessage"
                 },
+                "requestLocationMessage": {
+                    "$ref": "#/definitions/waE2E.RequestLocationMessage"
+                },
+                "requestLocationUpdateMessage": {
+                    "$ref": "#/definitions/waE2E.RequestLocationUpdateMessage"
+                },
                 "requestPaymentMessage": {
                     "$ref": "#/definitions/waE2E.RequestPaymentMessage"
                 },
@@ -11585,11 +12020,17 @@ const docTemplate = `{
                 "splitPaymentMessage": {
                     "$ref": "#/definitions/waE2E.SplitPaymentMessage"
                 },
+                "splitPaymentUpdateMessage": {
+                    "$ref": "#/definitions/waE2E.SplitPaymentUpdateMessage"
+                },
                 "spoilerMessage": {
                     "$ref": "#/definitions/waE2E.FutureProofMessage"
                 },
                 "statusAddYours": {
                     "$ref": "#/definitions/waE2E.FutureProofMessage"
+                },
+                "statusLinkPreviewMetadata": {
+                    "$ref": "#/definitions/waE2E.StatusLinkPreviewMetadata"
                 },
                 "statusMentionMessage": {
                     "$ref": "#/definitions/waE2E.FutureProofMessage"
@@ -11672,7 +12113,9 @@ const docTemplate = `{
                 17,
                 18,
                 19,
-                20
+                20,
+                21,
+                22
             ],
             "x-enum-varnames": [
                 "MessageAssociation_UNKNOWN",
@@ -11695,12 +12138,26 @@ const docTemplate = `{
                 "MessageAssociation_STATUS_ADD_YOURS_DIWALI",
                 "MessageAssociation_STATUS_REACTION",
                 "MessageAssociation_HEVC_VIDEO_DUAL_UPLOAD",
-                "MessageAssociation_POLL_ADD_OPTION"
+                "MessageAssociation_POLL_ADD_OPTION",
+                "MessageAssociation_AV1_VIDEO_DUAL_UPLOAD",
+                "MessageAssociation_STREAMED_HD_VIDEO_DUAL_UPLOAD"
             ]
         },
         "waE2E.MessageContextInfo": {
             "type": "object",
             "properties": {
+                "accountEncryptionAttestation": {
+                    "$ref": "#/definitions/waAea.NonE2EEAttestation"
+                },
+                "acp2Setting": {
+                    "$ref": "#/definitions/waCommon.ACP2Setting"
+                },
+                "associatedPrimaryIdentityKey": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "botMessageSecret": {
                     "type": "array",
                     "items": {
@@ -11757,6 +12214,9 @@ const docTemplate = `{
                     "items": {
                         "type": "integer"
                     }
+                },
+                "teeContextAnchorMessageID": {
+                    "type": "string"
                 },
                 "threadID": {
                     "type": "array",
@@ -11827,6 +12287,9 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "includesChatTheme": {
+                    "type": "boolean"
+                },
                 "messageCount": {
                     "type": "integer"
                 },
@@ -11847,6 +12310,9 @@ const docTemplate = `{
         "waE2E.MessageHistoryNotice": {
             "type": "object",
             "properties": {
+                "botHistoryShareSyncMetadata": {
+                    "$ref": "#/definitions/waE2E.BotHistoryShareSyncMetadata"
+                },
                 "contextInfo": {
                     "$ref": "#/definitions/waE2E.ContextInfo"
                 },
@@ -11865,6 +12331,26 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "value": {
+                    "type": "integer"
+                }
+            }
+        },
+        "waE2E.MusicMessage": {
+            "type": "object",
+            "properties": {
+                "artworkUri": {
+                    "type": "string"
+                },
+                "contextInfo": {
+                    "$ref": "#/definitions/waE2E.ContextInfo"
+                },
+                "embeddedMusic": {
+                    "$ref": "#/definitions/waE2E.EmbeddedMusic"
+                },
+                "songUri": {
+                    "type": "string"
+                },
+                "style": {
                     "type": "integer"
                 }
             }
@@ -12071,6 +12557,9 @@ const docTemplate = `{
         "waE2E.PaymentExtendedMetadata": {
             "type": "object",
             "properties": {
+                "messageParamsJSON": {
+                    "type": "string"
+                },
                 "platform": {
                     "type": "string"
                 },
@@ -12116,13 +12605,15 @@ const docTemplate = `{
                 0,
                 1,
                 2,
-                3
+                3,
+                4
             ],
             "x-enum-varnames": [
                 "PaymentInviteMessage_UNKNOWN",
                 "PaymentInviteMessage_FBPAY",
                 "PaymentInviteMessage_NOVI",
-                "PaymentInviteMessage_UPI"
+                "PaymentInviteMessage_UPI",
+                "PaymentInviteMessage_PIX"
             ]
         },
         "waE2E.PaymentLinkMetadata": {
@@ -12471,6 +12962,9 @@ const docTemplate = `{
                 "companionMetaNonceFetchRequestResponse": {
                     "$ref": "#/definitions/waE2E.PeerDataOperationRequestResponseMessage_PeerDataOperationResult_CompanionMetaNonceFetchResponse"
                 },
+                "contactRefreshResponse": {
+                    "$ref": "#/definitions/waE2E.PeerDataOperationRequestResponseMessage_PeerDataOperationResult_ContactRefreshResponse"
+                },
                 "flowResponsesCsvBundle": {
                     "$ref": "#/definitions/waE2E.PeerDataOperationRequestResponseMessage_PeerDataOperationResult_FlowResponsesCsvBundle"
                 },
@@ -12547,6 +13041,26 @@ const docTemplate = `{
             "properties": {
                 "nonce": {
                     "type": "string"
+                }
+            }
+        },
+        "waE2E.PeerDataOperationRequestResponseMessage_PeerDataOperationResult_ContactRefreshResponse": {
+            "type": "object",
+            "properties": {
+                "collectionVersion": {
+                    "type": "integer"
+                },
+                "coveredRequestIDs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "primaryDurationMS": {
+                    "type": "integer"
+                },
+                "uniqueContactCount": {
+                    "type": "integer"
                 }
             }
         },
@@ -12800,7 +13314,8 @@ const docTemplate = `{
                 10,
                 11,
                 12,
-                13
+                13,
+                14
             ],
             "x-enum-varnames": [
                 "PeerDataOperationRequestType_UPLOAD_STICKER",
@@ -12816,7 +13331,8 @@ const docTemplate = `{
                 "PeerDataOperationRequestType_HISTORY_SYNC_CHUNK_RETRY",
                 "PeerDataOperationRequestType_GALAXY_FLOW_ACTION",
                 "PeerDataOperationRequestType_BUSINESS_BROADCAST_INSIGHTS_DELIVERED_TO",
-                "PeerDataOperationRequestType_BUSINESS_BROADCAST_INSIGHTS_REFRESH"
+                "PeerDataOperationRequestType_BUSINESS_BROADCAST_INSIGHTS_REFRESH",
+                "PeerDataOperationRequestType_CONTACT_REFRESH_REQUEST"
             ]
         },
         "waE2E.PinInChatMessage": {
@@ -13183,6 +13699,15 @@ const docTemplate = `{
         "waE2E.ProtocolMessage": {
             "type": "object",
             "properties": {
+                "acp2Setting": {
+                    "$ref": "#/definitions/waCommon.ACP2Setting"
+                },
+                "additionalPromptIDs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "afterReadDuration": {
                     "type": "integer"
                 },
@@ -13219,6 +13744,9 @@ const docTemplate = `{
                 "cloudApiThreadControlNotification": {
                     "$ref": "#/definitions/waE2E.CloudAPIThreadControlNotification"
                 },
+                "coexStateSync": {
+                    "$ref": "#/definitions/waServerSync.CoexStateSync"
+                },
                 "disappearingMode": {
                     "$ref": "#/definitions/waE2E.DisappearingMode"
                 },
@@ -13249,6 +13777,9 @@ const docTemplate = `{
                 "limitSharing": {
                     "$ref": "#/definitions/waCommon.LimitSharing"
                 },
+                "markAsVerifiedAction": {
+                    "$ref": "#/definitions/waE2E.MarkAsVerifiedAction"
+                },
                 "mediaNotifyMessage": {
                     "$ref": "#/definitions/waE2E.MediaNotifyMessage"
                 },
@@ -13263,6 +13794,12 @@ const docTemplate = `{
                 },
                 "requestWelcomeMessageMetadata": {
                     "$ref": "#/definitions/waE2E.RequestWelcomeMessageMetadata"
+                },
+                "sharedDeviceContactHashKeyRequest": {
+                    "$ref": "#/definitions/waE2E.SharedDeviceContactHashKeyRequest"
+                },
+                "sharedDeviceContactHashKeyShare": {
+                    "$ref": "#/definitions/waE2E.SharedDeviceContactHashKeyShare"
                 },
                 "timestampMS": {
                     "type": "integer"
@@ -13304,7 +13841,12 @@ const docTemplate = `{
                 31,
                 32,
                 34,
-                35
+                35,
+                36,
+                37,
+                39,
+                40,
+                41
             ],
             "x-enum-varnames": [
                 "ProtocolMessage_REVOKE",
@@ -13336,7 +13878,12 @@ const docTemplate = `{
                 "ProtocolMessage_AI_MEDIA_COLLECTION_MESSAGE",
                 "ProtocolMessage_MESSAGE_UNSCHEDULE",
                 "ProtocolMessage_CHAT_THEME_SETTING",
-                "ProtocolMessage_AI_METADATA_OPERATION"
+                "ProtocolMessage_AI_METADATA_OPERATION",
+                "ProtocolMessage_MARK_AS_VERIFIED_ACTION",
+                "ProtocolMessage_COEX_STATE_SYNC",
+                "ProtocolMessage_ACP2_SETTING",
+                "ProtocolMessage_SHARED_DEVICE_CONTACT_HASH_KEY_SHARE",
+                "ProtocolMessage_SHARED_DEVICE_CONTACT_HASH_KEY_REQUEST"
             ]
         },
         "waE2E.QuestionResponseMessage": {
@@ -13366,6 +13913,39 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "waE2E.RequestLocationMessage": {
+            "type": "object",
+            "properties": {
+                "contextInfo": {
+                    "$ref": "#/definitions/waE2E.ContextInfo"
+                }
+            }
+        },
+        "waE2E.RequestLocationUpdateMessage": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "$ref": "#/definitions/waCommon.MessageKey"
+                },
+                "senderTimestampMS": {
+                    "type": "integer"
+                },
+                "updateType": {
+                    "$ref": "#/definitions/waE2E.RequestLocationUpdateMessage_UpdateType"
+                }
+            }
+        },
+        "waE2E.RequestLocationUpdateMessage_UpdateType": {
+            "type": "integer",
+            "enum": [
+                0,
+                1
+            ],
+            "x-enum-varnames": [
+                "RequestLocationUpdateMessage_UNKNOWN",
+                "RequestLocationUpdateMessage_CANCEL"
+            ]
         },
         "waE2E.RequestPaymentMessage": {
             "type": "object",
@@ -13570,6 +14150,55 @@ const docTemplate = `{
                 }
             }
         },
+        "waE2E.SharedDeviceContactHashKey": {
+            "type": "object",
+            "properties": {
+                "epoch": {
+                    "type": "integer"
+                },
+                "keyData": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "kind": {
+                    "$ref": "#/definitions/waE2E.SharedDeviceContactHashKey_Kind"
+                }
+            }
+        },
+        "waE2E.SharedDeviceContactHashKeyRequest": {
+            "type": "object",
+            "properties": {
+                "knownEpoch": {
+                    "type": "integer"
+                }
+            }
+        },
+        "waE2E.SharedDeviceContactHashKeyShare": {
+            "type": "object",
+            "properties": {
+                "keys": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/waE2E.SharedDeviceContactHashKey"
+                    }
+                }
+            }
+        },
+        "waE2E.SharedDeviceContactHashKey_Kind": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2
+            ],
+            "x-enum-varnames": [
+                "SharedDeviceContactHashKey_UNKNOWN",
+                "SharedDeviceContactHashKey_LID",
+                "SharedDeviceContactHashKey_PHONE_NUMBER"
+            ]
+        },
         "waE2E.SplitPaymentMessage": {
             "type": "object",
             "properties": {
@@ -13624,6 +14253,40 @@ const docTemplate = `{
                 "SplitPaymentParticipant_PAID"
             ]
         },
+        "waE2E.SplitPaymentUpdateMessage": {
+            "type": "object",
+            "properties": {
+                "participantJID": {
+                    "type": "string"
+                },
+                "splitID": {
+                    "type": "string"
+                }
+            }
+        },
+        "waE2E.StatusLinkPreviewMetadata": {
+            "type": "object",
+            "properties": {
+                "style": {
+                    "$ref": "#/definitions/waE2E.StatusLinkPreviewMetadata_Style"
+                }
+            }
+        },
+        "waE2E.StatusLinkPreviewMetadata_Style": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "x-enum-varnames": [
+                "StatusLinkPreviewMetadata_AUTO",
+                "StatusLinkPreviewMetadata_COMPACT",
+                "StatusLinkPreviewMetadata_FULL",
+                "StatusLinkPreviewMetadata_IMMERSIVE"
+            ]
+        },
         "waE2E.StatusNotificationMessage": {
             "type": "object",
             "properties": {
@@ -13644,13 +14307,15 @@ const docTemplate = `{
                 0,
                 1,
                 2,
-                3
+                3,
+                4
             ],
             "x-enum-varnames": [
                 "StatusNotificationMessage_UNKNOWN",
                 "StatusNotificationMessage_STATUS_ADD_YOURS",
                 "StatusNotificationMessage_STATUS_RESHARE",
-                "StatusNotificationMessage_STATUS_QUESTION_ANSWER_RESHARE"
+                "StatusNotificationMessage_STATUS_QUESTION_ANSWER_RESHARE",
+                "StatusNotificationMessage_STATUS_GROUP_STATUS_REPLY"
             ]
         },
         "waE2E.StatusQuestionAnswerMessage": {
@@ -13726,6 +14391,9 @@ const docTemplate = `{
                 },
                 "accessibilityLabel": {
                     "type": "string"
+                },
+                "audio": {
+                    "description": "Types that are valid to be assigned to Audio:\n\n\t*StickerMessage_AudioMessage"
                 },
                 "contextInfo": {
                     "$ref": "#/definitions/waE2E.ContextInfo"
@@ -14119,6 +14787,9 @@ const docTemplate = `{
                 "contextInfo": {
                     "$ref": "#/definitions/waE2E.ContextInfo"
                 },
+                "dashManifestURL": {
+                    "type": "string"
+                },
                 "directPath": {
                     "type": "string"
                 },
@@ -14180,6 +14851,9 @@ const docTemplate = `{
                     }
                 },
                 "seconds": {
+                    "type": "integer"
+                },
+                "smartThumbnailTS": {
                     "type": "integer"
                 },
                 "staticURL": {
@@ -14268,6 +14942,81 @@ const docTemplate = `{
                 "MediaRetryNotification_NOT_FOUND",
                 "MediaRetryNotification_DECRYPTION_ERROR"
             ]
+        },
+        "waServerSync.CoexStateSync": {
+            "type": "object",
+            "properties": {
+                "collectionMutations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/waServerSync.CoexStateSync_CollectionMutations"
+                    }
+                }
+            }
+        },
+        "waServerSync.CoexStateSync_CollectionMutations": {
+            "type": "object",
+            "properties": {
+                "collection": {
+                    "type": "string"
+                },
+                "mutations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/waServerSync.CoexStateSync_Mutation"
+                    }
+                }
+            }
+        },
+        "waServerSync.CoexStateSync_Mutation": {
+            "type": "object",
+            "properties": {
+                "dirtyVersion": {
+                    "type": "integer"
+                },
+                "index": {
+                    "$ref": "#/definitions/waServerSync.SyncdIndex"
+                },
+                "operation": {
+                    "$ref": "#/definitions/waServerSync.SyncdMutation_SyncdOperation"
+                },
+                "value": {
+                    "$ref": "#/definitions/waServerSync.SyncdValue"
+                }
+            }
+        },
+        "waServerSync.SyncdIndex": {
+            "type": "object",
+            "properties": {
+                "blob": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "waServerSync.SyncdMutation_SyncdOperation": {
+            "type": "integer",
+            "enum": [
+                0,
+                1
+            ],
+            "x-enum-varnames": [
+                "SyncdMutation_SET",
+                "SyncdMutation_REMOVE"
+            ]
+        },
+        "waServerSync.SyncdValue": {
+            "type": "object",
+            "properties": {
+                "blob": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
         },
         "waStatusAttributions.StatusAttribution": {
             "type": "object",
