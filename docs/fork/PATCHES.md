@@ -155,6 +155,14 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
   e versão documentada da ferramenta. Swagger gerado acompanha as mudanças funcionais.
 - Referências: PR #120 para o contrato/geração; demais instruções são particulares do fork.
 - Evidências: rules/AGENTS, template, Makefile e workflow de qualidade; CI geral mencionada acima.
+- Revisão em 2026-11-17, PR #17: `quality.yml` aceita `workflow_dispatch` com
+  `format_base` obrigatório, validado como ancestral antes do check de formatação.
+  Actionlint 1.7.9 e `git diff --check` passaram. O dispatch autenticado retornou
+  HTTP 422 `Actions has been disabled for this repository.`, mesmo com permissões
+  `enabled: true`, workflow ativo e nenhuma política de eventos/atores. Reabrir
+  o PR não iniciou run; reaplicar enable do repositório e workflow retornou 204,
+  mas o dispatch permaneceu bloqueado. Não há CI aprovada para este PR.
+  Evidências e retomada: [diagnóstico de Actions](CI-PR17.md).
 - Revisão documental em 2026-10-09: rule de persistência/Docker passou a referenciar
   a política de imagem do fork, removendo a indicação conflitante da imagem upstream.
 - Limitações: regras não garantem implementação correta; ferramentas executadas e limitações
