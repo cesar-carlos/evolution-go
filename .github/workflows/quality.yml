@@ -98,6 +98,9 @@ jobs:
       - name: Test fork release guards
         run: python3 -m unittest discover -s scripts/release -p 'test_*.py' -v
 
+      - name: Test API and session monitor
+        run: python3 -m unittest discover -s scripts/monitor -p 'test_*.py' -v
+
       - name: Vet
         run: go vet ./...
 
@@ -107,7 +110,7 @@ jobs:
       - name: Test with race detector
         run: go test -race -timeout 5m ./...
 
-      - name: Test the pinned interactive Whatsmeow patch
+      - name: Test the pinned interactive and status ACK Whatsmeow regressions
         run: |
           go test -timeout 5m go.mau.fi/whatsmeow
           go test -race -timeout 5m go.mau.fi/whatsmeow
