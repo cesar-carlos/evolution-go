@@ -182,8 +182,14 @@ func buildButtonMessage(data *ButtonStruct) (*waE2E.Message, error) {
 	}, MessageContextInfo: &waE2E.MessageContextInfo{MessageSecret: secret}}, nil
 }
 
+type interactiveMediaUploader interface {
+	Upload(context.Context, []byte, whatsmeow.MediaType) (whatsmeow.UploadResponse, error)
+}
+
 // prepareInteractiveHeader bounds media fetching/upload and closes every body.
-func prepareInteractiveHeader(ctx context.Context, client *whatsmeow.Client, imageURL, videoURL string) (*waE2E.InteractiveMessage_Header, error) {
+func prepareInteractiveHeader(ctx context.Context, client interactiveMediaUploader, imageURL, videoURL string) (*waE2E.InteractiveMessage_Header, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 	url := imageURL
 	kind := whatsmeow.MediaImage
 	if url == "" {
@@ -197,6 +203,9 @@ func prepareInteractiveHeader(ctx context.Context, client *whatsmeow.Client, ima
 	httpClient := &http.Client{Timeout: 30 * time.Second}
 	resp, err := httpClient.Do(req)
 	if err != nil {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 		return nil, errors.New("header media unavailable")
 	}
 	defer resp.Body.Close()

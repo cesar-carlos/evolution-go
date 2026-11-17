@@ -2837,7 +2837,7 @@ const docTemplate = `{
         },
         "/send/carousel": {
             "post": {
-                "description": "Send an interactive carousel (multiple swipeable cards). Each card carries its own image or video, body and optional buttons.\n\nCard button ` + "`" + `type` + "`" + ` accepted values (case-insensitive, uppercased internally): ` + "`" + `REPLY` + "`" + ` (default), ` + "`" + `URL` + "`" + `, ` + "`" + `CALL` + "`" + `, ` + "`" + `COPY` + "`" + `.\nThe ` + "`" + `PIX` + "`" + ` button type is NOT supported in carousel cards — use ` + "`" + `/send/button` + "`" + ` for PIX.\n\nIMPORTANT — ` + "`" + `CarouselButtonStruct` + "`" + ` is different from the flat button used in ` + "`" + `/send/button` + "`" + `:\n- URL button: put the link in the ` + "`" + `id` + "`" + ` field (NOT in a ` + "`" + `url` + "`" + ` field).\n- CALL button: put the phone number in the ` + "`" + `id` + "`" + ` field (NOT in a ` + "`" + `phoneNumber` + "`" + ` field).\n- COPY button: put the code to be copied in ` + "`" + `copyCode` + "`" + `.\n- REPLY button: put the payload/callback ID in ` + "`" + `id` + "`" + `.\n\nPer-card combination rules (NOT enforced by the server, but verified in the field):\n- Same WhatsApp Web quirk as ` + "`" + `/send/button` + "`" + `: avoid mixing REPLY with CTA buttons (URL/CALL/COPY) in the same card — mixed sets do not render on Web.\n- Stick to either \"only REPLY\" or \"only CTAs grouped together\" per card.\n\nRequired body fields: ` + "`" + `number` + "`" + `, ` + "`" + `cards` + "`" + ` (at least one). Each card requires ` + "`" + `header` + "`" + ` + ` + "`" + `body` + "`" + `.",
+                "description": "Invalid cards, conflicting targets, unknown button types and mixed REPLY/CTA cards return 400. URL/CALL accept id or url/phoneNumber; COPY_CODE aliases COPY.\nMedia downloads/uploads are bounded to 30 seconds per card and 32 MiB per media; preparation is bounded to 2 minutes. Media failures abort sending.\nSend an interactive carousel (multiple swipeable cards). Each card carries its own image or video, body and optional buttons.\n\nCard button ` + "`" + `type` + "`" + ` accepted values (case-insensitive, uppercased internally): ` + "`" + `REPLY` + "`" + ` (default), ` + "`" + `URL` + "`" + `, ` + "`" + `CALL` + "`" + `, ` + "`" + `COPY` + "`" + ` (alias ` + "`" + `COPY_CODE` + "`" + `).\nThe ` + "`" + `PIX` + "`" + ` button type is NOT supported in carousel cards — use ` + "`" + `/send/button` + "`" + ` for PIX.\n\nIMPORTANT — ` + "`" + `CarouselButtonStruct` + "`" + ` is different from the flat button used in ` + "`" + `/send/button` + "`" + `:\n- URL button: use ` + "`" + `id` + "`" + ` or ` + "`" + `url` + "`" + `; conflicting values return 400.\n- CALL button: use ` + "`" + `id` + "`" + ` or ` + "`" + `phoneNumber` + "`" + `; conflicting values return 400.\n- COPY button: put the code to be copied in ` + "`" + `copyCode` + "`" + `.\n- REPLY button: put the payload/callback ID in ` + "`" + `id` + "`" + `.\n\nPer-card combination rules (validated before sending):\n- Same WhatsApp Web quirk as ` + "`" + `/send/button` + "`" + `: avoid mixing REPLY with CTA buttons (URL/CALL/COPY) in the same card — mixed sets do not render on Web.\n- Stick to either \"only REPLY\" or \"only CTAs grouped together\" per card.\n\nRequired body fields: ` + "`" + `number` + "`" + `, ` + "`" + `cards` + "`" + ` (at least one). Each card requires non-empty ` + "`" + `body.text` + "`" + `; header media is optional and accepts either imageUrl or videoUrl.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4853,20 +4853,30 @@ const docTemplate = `{
                     "type": "string",
                     "example": "card1_info"
                 },
+                "phoneNumber": {
+                    "description": "Optional phone number alias for id; conflicting values are rejected.",
+                    "type": "string"
+                },
                 "type": {
-                    "description": "Button kind (case-insensitive). One of: REPLY (default), URL, CALL, COPY.",
+                    "description": "Button kind (case-insensitive). One of: REPLY (default), URL, CALL, COPY or COPY_CODE.",
                     "type": "string",
                     "enum": [
                         "REPLY",
                         "URL",
                         "CALL",
                         "COPY",
+                        "COPY_CODE",
                         "reply",
                         "url",
                         "call",
-                        "copy"
+                        "copy",
+                        "copy_code"
                     ],
                     "example": "REPLY"
+                },
+                "url": {
+                    "description": "Optional URL alias for id; conflicting values are rejected.",
+                    "type": "string"
                 }
             }
         },

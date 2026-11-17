@@ -643,22 +643,24 @@ func (s *sendHandler) SendList(ctx *gin.Context) {
 
 // Send a carousel message
 // @Summary Send a carousel message
+// @Description Invalid cards, conflicting targets, unknown button types and mixed REPLY/CTA cards return 400. URL/CALL accept id or url/phoneNumber; COPY_CODE aliases COPY.
+// @Description Media downloads/uploads are bounded to 30 seconds per card and 32 MiB per media; preparation is bounded to 2 minutes. Media failures abort sending.
 // @Description Send an interactive carousel (multiple swipeable cards). Each card carries its own image or video, body and optional buttons.
 // @Description
-// @Description Card button `type` accepted values (case-insensitive, uppercased internally): `REPLY` (default), `URL`, `CALL`, `COPY`.
+// @Description Card button `type` accepted values (case-insensitive, uppercased internally): `REPLY` (default), `URL`, `CALL`, `COPY` (alias `COPY_CODE`).
 // @Description The `PIX` button type is NOT supported in carousel cards — use `/send/button` for PIX.
 // @Description
 // @Description IMPORTANT — `CarouselButtonStruct` is different from the flat button used in `/send/button`:
-// @Description   - URL button: put the link in the `id` field (NOT in a `url` field).
-// @Description   - CALL button: put the phone number in the `id` field (NOT in a `phoneNumber` field).
+// @Description   - URL button: use `id` or `url`; conflicting values return 400.
+// @Description   - CALL button: use `id` or `phoneNumber`; conflicting values return 400.
 // @Description   - COPY button: put the code to be copied in `copyCode`.
 // @Description   - REPLY button: put the payload/callback ID in `id`.
 // @Description
-// @Description Per-card combination rules (NOT enforced by the server, but verified in the field):
+// @Description Per-card combination rules (validated before sending):
 // @Description   - Same WhatsApp Web quirk as `/send/button`: avoid mixing REPLY with CTA buttons (URL/CALL/COPY) in the same card — mixed sets do not render on Web.
 // @Description   - Stick to either "only REPLY" or "only CTAs grouped together" per card.
 // @Description
-// @Description Required body fields: `number`, `cards` (at least one). Each card requires `header` + `body`.
+// @Description Required body fields: `number`, `cards` (at least one). Each card requires non-empty `body.text`; header media is optional and accepts either imageUrl or videoUrl.
 // @Tags Send Message
 // @Accept json
 // @Produce json
@@ -676,24 +678,19 @@ func (s *sendHandler) SendCarousel(ctx *gin.Context) {
 		return
 	}
 
-	var data *send_service.CarouselStruct
+	var data send_service.CarouselStruct
 	err := ctx.ShouldBindBodyWithJSON(&data)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if data.Number == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "phone number is required"})
+	if err := send_service.ValidateCarousel(&data); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if len(data.Cards) == 0 {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "at least one card is required"})
-		return
-	}
-
-	message, err := s.sendMessageService.SendCarousel(data, instance)
+	message, err := s.sendMessageService.SendCarousel(ctx.Request.Context(), &data, instance)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
