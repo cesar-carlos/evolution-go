@@ -4,6 +4,12 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      format_base:
+        description: Ancestor commit used to check formatting of changed Go files
+        type: string
+        required: true
   workflow_call:
     inputs:
       format_base:
