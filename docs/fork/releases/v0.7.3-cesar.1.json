@@ -1,0 +1,65 @@
+{
+  "version": "0.7.3-cesar.1",
+  "tag": "v0.7.3-cesar.1",
+  "date": "2026-11-17",
+  "commit": "312e3dbc94e2914da8d511cfa4de57998c029233",
+  "upstream": {
+    "repository": "evolution-foundation/evolution-go",
+    "tag": "0.7.3",
+    "sha": "80d7c72c0727e091425d10f5654b7ccf07e01abe"
+  },
+  "image": "ghcr.io/cesar-carlos/evolution-go",
+  "digest": "sha256:9ad6344a6df7b8da357395202d2c7fec790910e2033979b118b9104030d43084",
+  "platforms": [
+    "linux/amd64",
+    "linux/arm64"
+  ],
+  "aliases": [
+    "0.7.3-cesar.1",
+    "sha-312e3dbc94e2914da8d511cfa4de57998c029233"
+  ],
+  "latest_alias_published": false,
+  "release": "https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.3-cesar.1",
+  "workflow": "https://github.com/cesar-carlos/evolution-go/actions/runs/44137006078",
+  "previous_release": {
+    "tag": "v0.7.2-cesar.4",
+    "digest": "sha256:06d66dd1e38e4f542d58dd2aa27ebc0b3efd7ba0be163a4733fb54700a864bb9"
+  },
+  "verification": {
+    "status": "verified",
+    "main_quality": "https://github.com/cesar-carlos/evolution-go/actions/runs/44135935581",
+    "main_quality_result": "success",
+    "release_workflow_result": "success",
+    "workflow_attempt": 1,
+    "anonymous_http_manifest": true,
+    "anonymous_pull": true,
+    "anonymous_pull_commands": [
+      "docker --config <fresh-anonymous-config-dir> pull --platform linux/amd64 ghcr.io/cesar-carlos/evolution-go@sha256:9ad6344a6df7b8da357395202d2c7fec790910e2033979b118b9104030d43084",
+      "docker --config <fresh-anonymous-config-dir> pull --platform linux/arm64 ghcr.io/cesar-carlos/evolution-go@sha256:9ad6344a6df7b8da357395202d2c7fec790910e2033979b118b9104030d43084"
+    ],
+    "anonymous_config": "Fresh directory containing only config.json with {}",
+    "version_and_sha_aliases_match_digest": true,
+    "previous_release_digest_preserved": true,
+    "manifest_revision_version_source_and_upstream_verified": true,
+    "runtime_smoke_checks": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "runtime_smoke_evidence": "Publish workflow: version file, compiled version, executable, Manager/Sender assets, ffmpeg, pdftoppm and server -h; service not started.",
+    "whatsmeow_commit": "3e04a7b2fcdfab3a0243983738e448bdbaccb858",
+    "whatsmeow_binary_module": "v0.0.0-20261117154128-3e04a7b2fcdf",
+    "local_build_vet_tests_race": "success",
+    "browser_tests": 5,
+    "release_guard_tests": 12,
+    "monitor_tests": 11
+  },
+  "migration": {
+    "blocklist": "data.Items replaces data.JIDs; AddressingMode added",
+    "whatsmeow_schema": 16,
+    "backup_and_runtime_compatibility_check_required_before_rollback": true
+  },
+  "limitations": {
+    "real_whatsapp_homologation_executed": false,
+    "production_deployed": false
+  }
+}

@@ -1,8 +1,9 @@
 # Integração da base oficial 0.7.3
 
-Revisão em 2026-11-17. Candidato `0.7.3-cesar.1`, sem publicação de release,
-imagem ou implantação. A distribuição publicada anterior continua sendo
-`0.7.2-cesar.4`; seu digest permanece no registro de release e no README.
+Revisão em 2026-11-17. Release e imagem `0.7.3-cesar.1` publicadas e verificadas,
+sem implantação em produção. O [registro da publicação](releases/v0.7.3-cesar.1.json)
+contém digest, arquiteturas e evidências. A distribuição anterior é
+`0.7.2-cesar.4`; seu digest permanece no registro da release anterior.
 
 ## Origem e preservação dos patches
 

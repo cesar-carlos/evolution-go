@@ -539,8 +539,11 @@ Pareamento, reconexão, passkey e renderização/cliques reais continuam pendent
 Comparação: `9337afc47e10b86cc896a6f432240e40fee95dd1` →
 `80d7c72c0727e091425d10f5654b7ccf07e01abe`. Candidato `0.7.3-cesar.1`.
 O [guia de atualização](UPGRADE-0.7.3.md) registra dependência, contrato blocklist,
-schema v16 e condições de implantação/reversão. Nada foi implantado ou publicado
-como release; a nova branch da biblioteca foi publicada para resolver seu SHA.
+schema v16 e condições de implantação/reversão. Na integração inicial, nada foi
+implantado ou publicado como release; a branch da biblioteca foi publicada para
+resolver seu SHA. Posteriormente, em 2026-11-17, a release `0.7.3-cesar.1` foi
+publicada com [CI, imagem e downloads anônimos verificados](releases/v0.7.3-cesar.1.json).
+Produção permanece inalterada.
 
 Todos os testes existentes do fork foram preservados. A comparação dos caminhos
 alterados pela release e a suíte completa sustentam a seguinte decisão por item:
