@@ -11,19 +11,19 @@
 Versão deste código: **0.7.3-cesar.1**, com [compatibilidade interativa](docs/fork/INTERACTIVE-COMPATIBILITY.md),
 previews/imagens, interfaces Manager/Sender e armazenamento/ciclo de sessões corrigidos.
 [Complementos para os PRs de origem](docs/fork/UPSTREAM-CONTRIBUTIONS.md).
-Esta versão está em integração, sem imagem publicada ou implantação. Consulte as
+Esta versão foi publicada, sem implantação em produção. Consulte as
 [mudanças de contrato e migração da base 0.7.3](docs/fork/UPGRADE-0.7.3.md).
-Última imagem publicada e verificada: [0.7.2-cesar.4](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.2-cesar.4).
+Última imagem publicada e verificada: [0.7.3-cesar.1](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.3-cesar.1).
 
 ```sh
-docker pull ghcr.io/cesar-carlos/evolution-go@sha256:06d66dd1e38e4f542d58dd2aa27ebc0b3efd7ba0be163a4733fb54700a864bb9
+docker pull ghcr.io/cesar-carlos/evolution-go@sha256:9ad6344a6df7b8da357395202d2c7fec790910e2033979b118b9104030d43084
 ```
 
 O digest acima foi verificado por download anônimo em ambas as arquiteturas.
-[Registro da verificação](docs/fork/releases/v0.7.2-cesar.4.json). Use essa referência
+[Registro da verificação](docs/fork/releases/v0.7.3-cesar.1.json). Use essa referência
 completa em `EVOLUTION_IMAGE` para instalação reproduzível.
 
-A versão anterior e seu digest permanecem no [registro de 0.7.2-cesar.3](docs/fork/releases/v0.7.2-cesar.3.json).
+A versão anterior e seu digest permanecem no [registro de 0.7.2-cesar.4](docs/fork/releases/v0.7.2-cesar.4.json).
 Antes de reverter, confira a compatibilidade do banco conforme o guia de manutenção.
 
 Imagem inicial (referência de reversão): `ghcr.io/cesar-carlos/evolution-go:0.7.2-cesar.1`.

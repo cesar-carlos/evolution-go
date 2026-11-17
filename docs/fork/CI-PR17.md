@@ -51,3 +51,11 @@ e do workflow retorna 204, mas não restaura a execução. Solicitamos revisão 
 estado de desabilitação e orientação sobre o motivo e a restauração.
 
 Este texto foi apenas preparado; nenhum chamado foi enviado.
+
+## Atualização após o merge — 2026-11-17
+
+O bloqueio descrito acima deixou de impedir a execução após o merge autorizado
+do PR #17. O workflow [Go Quality de 312e3db](https://github.com/cesar-carlos/evolution-go/actions/runs/44135935581)
+concluiu com sucesso: build, vet, testes, race detector, regressões da biblioteca
+Whatsmeow e testes de navegador. A API comprova a retomada, mas não identifica a
+causa da liberação. O diagnóstico acima é histórico, não uma pendência atual.
