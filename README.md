@@ -8,10 +8,11 @@
 > [Releases do fork](https://github.com/cesar-carlos/evolution-go/releases) ·
 > [Imagem GHCR](https://github.com/cesar-carlos/evolution-go/pkgs/container/evolution-go)
 
-Versão deste código: **0.7.3-cesar.1**, com [compatibilidade interativa](docs/fork/INTERACTIVE-COMPATIBILITY.md),
+Versão deste código: **0.7.3-cesar.2**, com [compatibilidade interativa](docs/fork/INTERACTIVE-COMPATIBILITY.md),
 previews/imagens, interfaces Manager/Sender e armazenamento/ciclo de sessões corrigidos.
+Esta revisão inclui [correções de carrossel e BUTTON_CLICK no NATS](docs/fork/CAROUSEL-NATS.md).
 [Participações, respostas e complementos aos PRs de origem](docs/fork/UPSTREAM-CONTRIBUTIONS.md).
-Esta versão foi publicada e implantada em produção em 2026-11-17, conforme o
+A versão anterior 0.7.3-cesar.1 foi implantada em produção em 2026-11-17, conforme o
 [registro da implantação](docs/fork/deployments/2026-11-17-0.7.3-cesar.1.md). Consulte as
 [mudanças de contrato e migração da base 0.7.3](docs/fork/UPGRADE-0.7.3.md).
 Última imagem publicada e verificada: [0.7.3-cesar.1](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.3-cesar.1).
