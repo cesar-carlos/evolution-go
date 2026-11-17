@@ -1,3 +1,10 @@
+# Nota de migração do fork: base 0.7.3
+
+As respostas de `/user/block`, `/user/unblock` e `/user/blocklist` agora usam
+`data.Items` (`LID`, `PN`, `Active`) e `data.AddressingMode`, em vez de `data.JIDs`.
+`DHash` e o envelope `message`/`data` são preservados. Consulte o
+[guia de migração](../../fork/UPGRADE-0.7.3.md) antes de atualizar consumidores.
+
 # API de Usuários
 
 Documentação completa dos endpoints para gerenciar perfil, contatos e privacidade.

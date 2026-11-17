@@ -334,7 +334,7 @@ func (u *userHandler) SetPrivacy(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param message body user_service.BlockStruct true "Block data"
-// @Success 200 {object} gin.H "success"
+// @Success 200 {object} BlocklistResponse "success; Items replaces JIDs since 0.7.3"
 // @Failure 400 {object} gin.H "Error on validation"
 // @Failure 500 {object} gin.H "Internal server error"
 // @Router /user/block [post]
@@ -380,7 +380,7 @@ func (u *userHandler) BlockContact(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param message body user_service.BlockStruct true "Block data"
-// @Success 200 {object} gin.H "success"
+// @Success 200 {object} BlocklistResponse "success; Items replaces JIDs since 0.7.3"
 // @Failure 400 {object} gin.H "Error on validation"
 // @Failure 500 {object} gin.H "Internal server error"
 // @Router /user/unblock [post]
@@ -425,7 +425,7 @@ func (u *userHandler) UnblockContact(ctx *gin.Context) {
 // @Tags User
 // @Accept json
 // @Produce json
-// @Success 200 {object} gin.H "success"
+// @Success 200 {object} BlocklistResponse "success; Items replaces JIDs since 0.7.3"
 // @Failure 500 {object} gin.H "Internal server error"
 // @Router /user/blocklist [get]
 func (u *userHandler) GetBlockList(ctx *gin.Context) {

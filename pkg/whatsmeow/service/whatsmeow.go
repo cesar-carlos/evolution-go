@@ -21,7 +21,6 @@ import (
 	"golang.org/x/image/webp"
 	"google.golang.org/protobuf/proto"
 
-	_ "github.com/lib/pq"
 	"github.com/patrickmn/go-cache"
 	"github.com/skip2/go-qrcode"
 	"go.mau.fi/whatsmeow"

@@ -1,5 +1,10 @@
 # Inventário de diferenças do fork
 
+Base atual em integração: oficial **0.7.3**, commit
+`80d7c72c0727e091425d10f5654b7ccf07e01abe`, candidato `0.7.3-cesar.1`.
+A [revisão de 2026-11-17](#revisão-da-base-oficial-073--2026-11-17) atualiza
+os estados abaixo; as comparações anteriores são mantidas como histórico.
+
 Base comparada em **2026-10-09**: oficial `0.7.2`, commit
 `9337afc47e10b86cc896a6f432240e40fee95dd1`. Revisão inicial: 31 commits adicionais
 até `83d8c96`; merges não são contados como problemas independentes.
@@ -150,6 +155,14 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
   e versão documentada da ferramenta. Swagger gerado acompanha as mudanças funcionais.
 - Referências: PR #120 para o contrato/geração; demais instruções são particulares do fork.
 - Evidências: rules/AGENTS, template, Makefile e workflow de qualidade; CI geral mencionada acima.
+- Revisão em 2026-11-17, PR #17: `quality.yml` aceita `workflow_dispatch` com
+  `format_base` obrigatório, validado como ancestral antes do check de formatação.
+  Actionlint 1.7.9 e `git diff --check` passaram. O dispatch autenticado retornou
+  HTTP 422 `Actions has been disabled for this repository.`, mesmo com permissões
+  `enabled: true`, workflow ativo e nenhuma política de eventos/atores. Reabrir
+  o PR não iniciou run; reaplicar enable do repositório e workflow retornou 204,
+  mas o dispatch permaneceu bloqueado. Não há CI aprovada para este PR.
+  Evidências e retomada: [diagnóstico de Actions](CI-PR17.md).
 - Revisão documental em 2026-10-09: rule de persistência/Docker passou a referenciar
   a política de imagem do fork, removendo a indicação conflitante da imagem upstream.
 - Limitações: regras não garantem implementação correta; ferramentas executadas e limitações
@@ -349,7 +362,9 @@ compatibilidade; publicação aprovada não representa comprovação de renderiz
 
 ## F-019 — Store de autenticação compartilhado e recuperável
 
-- Estado: `local`; armazenamento integrado pelo PR #12, commit `0a50034`.
+- Estado: `parcialmente coberto pelo upstream` desde 0.7.3; armazenamento local
+  integrado pelo PR #12, commit `0a50034`. A revisão de 2026-11-17 mantém
+  cancelamento por chamador, WAL correto, ownership e shutdown do fork.
 - Validação: CI [37974834132](https://github.com/cesar-carlos/evolution-go/actions/runs/37974834132) aprovada (Go/race/PostgreSQL e navegador).
 - Commits: `0a50034` (store/entrypoint) e `68f4725` (isolamento do fixture PostgreSQL).
 - Comparação: 2026-10-09, base oficial `0.7.2`, issue #186.
@@ -448,7 +463,9 @@ Pareamento, reconexão, passkey e renderização/cliques reais continuam pendent
 
 ## F-022 — Versão do handshake rejeitada com HTTP 405
 
-- Estado: `local`; comparação em 2026-11-03, base oficial `0.7.2`.
+- Estado: `parcialmente coberto pelo upstream` desde 0.7.3: a biblioteca atualiza
+  a revisão padrão. Mantemos configuração/fetch dinâmico e regressões do handshake.
+  Comparação original em 2026-11-03, base oficial `0.7.2`.
 - Problema/esperado: o WhatsApp fechava o websocket com `Client outdated (405)`
   porque o handshake continuava na versão embutida na biblioteca
   (`2.3000.1042386815`). A revisão obtida de `web.whatsapp.com/sw.js`, ou de
@@ -493,4 +510,87 @@ Pareamento, reconexão, passkey e renderização/cliques reais continuam pendent
 - Limitações: a entrega depende de um SMTP informado pelo operador. O teste não
   abre conexão nem consulta o banco.
 - Retirada: o fork deixar de operar um vigilante próprio para essas interrupções.
+
+## F-025 — Confirmação de nós status do WhatsApp
+
+- Estado: `substituído pelo upstream` na integração da base 0.7.3, em 2026-11-17.
+- Origem: alteração em produção, ainda sem commit no Evolution Go; biblioteca
+  [0a13d31](https://github.com/cesar-carlos/whatsmeow/commit/0a13d3117a80f33e1325e967e0a4cae800bc09f2).
+- Problema/esperado: nós `status` de mídia/texto sem ACK eram associados a quedas
+  com `stream:error` e fila offline retida. Confirmar status sem convertê-lo em
+  conversa; preservar eventos de newsletter e `IsNewsletterStatus`.
+- Solução oficial: [a238105](https://github.com/tulir/whatsmeow/commit/a2381054887e16d22428430fdc4d2b027a7f29a7),
+  presente em `54038813c47f3f351eb6fcaafab0e1b99d676850`. Após o merge, client.go
+  e message.go do fork da biblioteca são idênticos à base oficial; não há handler
+  duplicado nem necessidade de transportar novamente o patch de produção.
+- Dependência integrada: `3e04a7b2fcdfab3a0243983738e448bdbaccb858`, mantendo F-013.
+- Evidências: `TestStatusNodeIsAcknowledgedWithoutBecomingAChat` preservado e
+  reforçado, passando normal e com race. A chamada pelo handler registrado deve
+  tentar ACK para media/text (erro de transporte desconectado observado), não
+  publicar conversa e marcar newsletter. Remover somente o ACK via overlay faz
+  o teste falhar com `did not attempt an ACK`.
+- Limitações: sem WhatsApp real; o teste não demonstra aceitação remota, recuperação
+  de mensagens indecifráveis ou entrega da fila offline. Produção permanece intacta.
+- Retirada: implementação local substituída pelo comportamento oficial equivalente;
+  teste de regressão mantido e registro histórico preservado.
+
+## Revisão da base oficial 0.7.3 — 2026-11-17
+
+Comparação: `9337afc47e10b86cc896a6f432240e40fee95dd1` →
+`80d7c72c0727e091425d10f5654b7ccf07e01abe`. Candidato `0.7.3-cesar.1`.
+O [guia de atualização](UPGRADE-0.7.3.md) registra dependência, contrato blocklist,
+schema v16 e condições de implantação/reversão. Nada foi implantado ou publicado
+como release; a nova branch da biblioteca foi publicada para resolver seu SHA.
+
+Todos os testes existentes do fork foram preservados. A comparação dos caminhos
+alterados pela release e a suíte completa sustentam a seguinte decisão por item:
+
+| Item | Estado nesta base | Decisão/evidência |
+|---|---|---|
+| F-001 | `local` | Avatar, prazos, erros e testes preservados; oficial só adapta outras APIs de usuário. |
+| F-002 | `local` | PictureURL e enriquecimento limitado preservados; testes de queries passam. |
+| F-003 | `local` | Preparação de edições e flags preservadas; fixtures da nova biblioteca passam. |
+| F-004 | `local` | Escritas WS e limpeza por identidade preservadas; suíte e race passam. |
+| F-005 | `local` | Settings parciais e isolamento preservados; testes HTTP/SQL passam. |
+| F-006 | `local` | Menções em wrappers/mídia preservadas; testes de envio passam. |
+| F-007 | `local` | Middleware de arrays permanece; sem retirada por ausência de nova solução oficial. |
+| F-008 | `local` | Sanitização e configuração de logs mantidas; regressões passam. |
+| F-009 | `exclusivo do fork` | Compose preservado; referência padrão avança ao candidato, sem iniciar stack. |
+| F-010 | `exclusivo do fork` | E2E opcional preservado, não executado (envia mensagens reais). |
+| F-011 | `exclusivo do fork` | Rules/CI preservadas; Swagger regenerado pelo make, sem edição manual. |
+| F-012 | `exclusivo do fork` | Nova base/VERSION rastreáveis; guards de publicação preservados. |
+| F-013 | `local` | Nós interativos, precedência e wrappers continuam no fork Whatsmeow; testes/race passam. |
+| F-014 | `local` | Parsing de respostas e preservação de eventos mantidos; regressões passam. |
+| F-015 | `local` | EXIF/dimensões/limites mantidos; regressões de mídia passam. |
+| F-016 | `local` | Preview limitado, cancelamento, rede e metadados preservados; testes passam. |
+| F-017 | `local` | Overlay touch preservado; Chromium cobre fixture e bundle real. |
+| F-018 | `local` | Sender e liberação de assets na licença preservados; HTTP, stores e navegador passam. |
+| F-019 | `parcialmente coberto pelo upstream` | Pool/retry oficiais sobrepostos; mantemos store por serviço, WAL, cancelamento e fechamento. SQLite/PostgreSQL e race passam. |
+| F-020 | `local` | Lifecycle e workers preservados integralmente; regressões concorrentes passam. |
+| F-021 | `local` | Descarte após logout remoto e favicon preservados; testes passam. |
+| F-022 | `parcialmente coberto pelo upstream` | Revisão padrão atualizada; preservamos configuração/fetch e sincronização do handshake. |
+| F-023 | `local` | Serialização do evento Archive preservada; regressão passa. |
+| F-024 | `exclusivo do fork` | Monitor mantido; 11 testes passam sem SMTP/API reais. |
+| F-025 | `substituído pelo upstream` | ACK equivalente na nova biblioteca; regressão preservada e mutação sem ACK detectada. |
+
+A atualização HTTP da blocklist é intencional e documentada: `Items` substitui
+`JIDs`; `AddressingMode` é adicionado. O teste HTTP verifica os três endpoints,
+identidades PN/LID, Active e o envelope existente. Anotações e Swagger acompanham
+o contrato. Não altera os patches F-001/F-002.
+
+Validação local em Docker Linux, Go 1.26.10, CGO habilitado e dependências nativas:
+build/vet/testes/race completos da aplicação e biblioteca; `go mod verify`;
+SQLite temporário e PostgreSQL 16 descartável; 12 guards de release; 11 testes
+do monitor; cinco regressões Playwright 1.62.1/Chromium; `make swagger` com swag
+v1.16.3; actionlint 1.7.9; formatação dos Go alterados e `git diff --check`.
+Os resultados locais não substituem os checks do commit final no GitHub.
+Homologação real de WhatsApp, envio interativo e implantação continuam pendentes.
+
+Auditoria adicional em 2026-11-17: as sete branches de contribuição foram
+comparadas com a main `98bcc1f` e o PR #17 `2cf0b13`. Nenhum complemento de
+F-001–F-006 ou F-019/F-020 ficou ausente; implementações, pontos de integração
+e regressões estão registrados em [BRANCH-AUDIT-0.7.3.md](BRANCH-AUDIT-0.7.3.md).
+Build/vet completos e testes/race com `-count=1` passaram novamente em Linux,
+incluindo PostgreSQL 16 descartável e SQLite temporário. Nenhuma mudança de
+código ou merge adicional foi necessário.
 

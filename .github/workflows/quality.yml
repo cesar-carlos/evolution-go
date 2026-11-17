@@ -4,6 +4,12 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      format_base:
+        description: Ancestor commit used to check formatting of changed Go files
+        type: string
+        required: true
   workflow_call:
     inputs:
       format_base:
@@ -98,6 +104,9 @@ jobs:
       - name: Test fork release guards
         run: python3 -m unittest discover -s scripts/release -p 'test_*.py' -v
 
+      - name: Test API and session monitor
+        run: python3 -m unittest discover -s scripts/monitor -p 'test_*.py' -v
+
       - name: Vet
         run: go vet ./...
 
@@ -107,7 +116,7 @@ jobs:
       - name: Test with race detector
         run: go test -race -timeout 5m ./...
 
-      - name: Test the pinned interactive Whatsmeow patch
+      - name: Test the pinned interactive and status ACK Whatsmeow regressions
         run: |
           go test -timeout 5m go.mau.fi/whatsmeow
           go test -race -timeout 5m go.mau.fi/whatsmeow
