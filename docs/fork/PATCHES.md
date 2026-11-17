@@ -530,7 +530,8 @@ Pareamento, reconexão, passkey e renderização/cliques reais continuam pendent
   publicar conversa e marcar newsletter. Remover somente o ACK via overlay faz
   o teste falhar com `did not attempt an ACK`.
 - Limitações: sem WhatsApp real; o teste não demonstra aceitação remota, recuperação
-  de mensagens indecifráveis ou entrega da fila offline. Produção permanece intacta.
+  de mensagens indecifráveis ou entrega da fila offline. A implantação posterior
+  está no [registro de produção](deployments/2026-11-17-0.7.3-cesar.1.md).
 - Retirada: implementação local substituída pelo comportamento oficial equivalente;
   teste de regressão mantido e registro histórico preservado.
 
@@ -543,7 +544,10 @@ schema v16 e condições de implantação/reversão. Na integração inicial, na
 implantado ou publicado como release; a branch da biblioteca foi publicada para
 resolver seu SHA. Posteriormente, em 2026-11-17, a release `0.7.3-cesar.1` foi
 publicada com [CI, imagem e downloads anônimos verificados](releases/v0.7.3-cesar.1.json).
-Produção permanece inalterada.
+Depois da publicação, a versão foi [implantada em produção](deployments/2026-11-17-0.7.3-cesar.1.md)
+com backup restaurado em teste, configurações preservadas e recuperação das 21
+sessões anteriormente ativas. O registro da release conserva o retrato da
+publicação; o registro de implantação documenta esta etapa posterior.
 
 Todos os testes existentes do fork foram preservados. A comparação dos caminhos
 alterados pela release e a suíte completa sustentam a seguinte decisão por item:
@@ -587,7 +591,9 @@ SQLite temporário e PostgreSQL 16 descartável; 12 guards de release; 11 testes
 do monitor; cinco regressões Playwright 1.62.1/Chromium; `make swagger` com swag
 v1.16.3; actionlint 1.7.9; formatação dos Go alterados e `git diff --check`.
 Os resultados locais não substituem os checks do commit final no GitHub.
-Homologação real de WhatsApp, envio interativo e implantação continuam pendentes.
+A implantação e a reconexão das sessões foram verificadas posteriormente no
+registro acima. Homologação de envio interativo, novo pareamento e passkey
+continua pendente; saúde e reconexão não comprovam esses fluxos.
 
 Auditoria adicional em 2026-11-17: as sete branches de contribuição foram
 comparadas com a main `98bcc1f` e o PR #17 `2cf0b13`. Nenhum complemento de

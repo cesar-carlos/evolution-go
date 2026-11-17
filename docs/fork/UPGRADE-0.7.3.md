@@ -1,7 +1,8 @@
 # Integração da base oficial 0.7.3
 
-Revisão em 2026-11-17. Release e imagem `0.7.3-cesar.1` publicadas e verificadas,
-sem implantação em produção. O [registro da publicação](releases/v0.7.3-cesar.1.json)
+Revisão em 2026-11-17. Release e imagem `0.7.3-cesar.1` publicadas, verificadas e
+[implantadas em produção](deployments/2026-11-17-0.7.3-cesar.1.md).
+O [registro da publicação](releases/v0.7.3-cesar.1.json)
 contém digest, arquiteturas e evidências. A distribuição anterior é
 `0.7.2-cesar.4`; seu digest permanece no registro da release anterior.
 
@@ -57,8 +58,8 @@ migração. Siga [MAINTENANCE.md](MAINTENANCE.md) antes de implantar ou reverter
 
 ## F-025
 
-A produção usa o patch `0a13d3117a80f33e1325e967e0a4cae800bc09f2` sobre a
-biblioteca antiga. Na nova base, o commit oficial
+Antes desta implantação, a produção usava o patch
+`0a13d3117a80f33e1325e967e0a4cae800bc09f2` sobre a biblioteca antiga. Na nova base, o commit oficial
 `a2381054887e16d22428430fdc4d2b027a7f29a7` implementa os mesmos caminhos de ACK
 e newsletter. O merge mantém o código oficial e o teste `status_ack_test.go`.
 A regressão verifica tentativa de ACK para media/text, ausência de evento de

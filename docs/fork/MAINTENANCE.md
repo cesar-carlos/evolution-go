@@ -13,6 +13,7 @@ existentes. A política foi aprovada pelo responsável pelo fork em 2026-10-09.
 - `main`: código integrado e validado do fork; histórico publicado não é reescrito.
 - Base oficial: [`.github/upstream-base.json`](../../.github/upstream-base.json).
 - Diferenças e evidências: [PATCHES.md](PATCHES.md); instruções gerais: [AGENTS.md](../../AGENTS.md).
+- Participação pública, respostas e propostas locais: [UPSTREAM-CONTRIBUTIONS.md](UPSTREAM-CONTRIBUTIONS.md).
 - Releases estáveis oficiais são a base normal. Não acompanhar `develop` automaticamente.
 - Cada correção local só é retirada quando a implementação oficial resolver seu
   comportamento completo, comprovado pelos testes relevantes. Merge sem conflito

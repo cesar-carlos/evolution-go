@@ -1,12 +1,90 @@
 # Contribuições e revisões upstream
 
-Revisão dos heads de 2026-10-09. O código integrado e as condições de retirada
-continuam no [inventário](PATCHES.md); este arquivo registra os complementos
-que podem ser propostos aos PRs de origem. Uma contribuição precisa ser adaptada
+Este arquivo reúne a participação pública da conta `cesar-carlos` e as revisões
+técnicas realizadas no fork. Comentário publicado, autoria de PR e adaptação local
+são formas distintas de participação; revisar ou integrar uma proposta localmente
+não significa que ela foi enviada ao autor ou aceita pelo upstream.
+
+- [Participações publicadas e pendências](#participações-publicadas-e-pendências)
+- [Revisões técnicas de Evolution Go](#revisões-técnicas-de-evolution-go)
+- [Revisões técnicas de Whatsmeow](#whatsmeow)
+- [Armazenamento de sessões e contribuição ao #117](#armazenamento-de-sessões--revisão-em-2026-10-09)
+
+O código integrado e as condições de retirada continuam no [inventário](PATCHES.md).
+Os heads das revisões técnicas abaixo foram comparados em **2026-10-09**; a consulta
+das discussões públicas foi feita em **2026-10-10**. O estado de uma discussão é um
+retrato dessa consulta, sem monitoramento automático. Datas e horários de participação
+abaixo usam `America/Cuiaba` (UTC−04:00).
+
+## Participações publicadas e pendências
+
+### Evolution Go
+
+Os sete PRs abaixo estavam **abertos, sem merge**. Nos seis de nossa autoria não
+havia resposta ou revisão humana registrada. No #117, os relatos de outros
+participantes antecedem nossa contribuição de 2026-10-09; não são respostas a ela.
+
+| PR / tema | Nossa participação verificável | Respostas e acompanhamento |
+|---|---|---|
+| [#117 — store de autenticação](https://github.com/evolution-foundation/evolution-go/pull/117) | [Comentário de 2026-10-09](https://github.com/evolution-foundation/evolution-go/pull/117#issuecomment-6088147609), com patch adaptado ao head do autor e validação. | Nosso comentário era o último, sem resposta posterior. Aguardar retorno; detalhes técnicos na seção de armazenamento. |
+| [#120 — avatar](https://github.com/evolution-foundation/evolution-go/pull/120) | Autoria do PR e [último comentário nosso, em 2026-07-18](https://github.com/evolution-foundation/evolution-go/pull/120#issuecomment-5011763660). | Sem resposta humana. Revisão antiga do Sourcery sobre dados identificáveis em erros; nenhuma nova revisão após os complementos de outubro. |
+| [#121 — PictureURL](https://github.com/evolution-foundation/evolution-go/pull/121) | Autoria do PR e [último comentário nosso, em 2026-07-18](https://github.com/evolution-foundation/evolution-go/pull/121#issuecomment-5011763693). | Sem resposta humana. Revisão antiga do Sourcery sobre timeouts, logs e normalização; nenhuma nova revisão após os complementos de outubro. |
+| [#122 — edições recebidas](https://github.com/evolution-foundation/evolution-go/pull/122) | Autoria do PR e [comentário de reabertura, em 2026-07-17](https://github.com/evolution-foundation/evolution-go/pull/122#issuecomment-5007081609). | Sem resposta humana. Revisão antiga do Sourcery sobre contexto e logs; nenhuma nova revisão após os complementos de outubro. |
+| [#135 — WebSocket](https://github.com/evolution-foundation/evolution-go/pull/135) | Autoria do PR; revisão nas branches registrada abaixo. | [Aprovação do Sourcery em 2026-10-08](https://github.com/evolution-foundation/evolution-go/pull/135#pullrequestreview-5460867355). Aprovação automática, sem revisão humana registrada. |
+| [#136 — settings de instância](https://github.com/evolution-foundation/evolution-go/pull/136) | Autoria do PR; revisão nas branches registrada abaixo. | Apenas mensagens antigas do Sourcery, incluindo limite de revisão atingido. Aguardar revisão humana. |
+| [#137 — menções](https://github.com/evolution-foundation/evolution-go/pull/137) | Autoria do PR; revisão nas branches registrada abaixo. | Revisão antiga do Sourcery sobre seleção do payload e tipos não suportados. Aguardar revisão humana. |
+
+A [issue #76 — `/user/avatar`](https://github.com/evolution-foundation/evolution-go/issues/76)
+também registra participação: [comentário nosso de 2026-07-16](https://github.com/evolution-foundation/evolution-go/issues/76#issuecomment-4991475039),
+relatando ausência do avatar nas rotas de info e avatar. A issue estava aberta e nosso
+comentário era o último, sem resposta posterior. Relaciona-se aos PRs #120/#121 e a
+F-001/F-002; não é um PR adicional.
+
+### Evolution API — histórico relacionado
+
+Estas participações pertencem a `evolution-foundation/evolution-api`, outro
+repositório. São mantidas aqui para acompanhamento; não representam patches
+incorporados ao Evolution Go nem itens novos do inventário `F-NNN`.
+
+| PR / tema | Nossa participação verificável | Estado e pendência na consulta |
+|---|---|---|
+| [#2579 — QR do bot no Chatwoot](https://github.com/evolution-foundation/evolution-api/pull/2579) | Autoria do PR e [comentário de 2026-06-11](https://github.com/evolution-foundation/evolution-api/pull/2579#issuecomment-4681995551), vinculando a issue #2580. | Aberto, sem merge, ainda com base `main`. Há dois pedidos para usar `develop`, detalhados abaixo. |
+| [#2133 — migração ESM e desempenho](https://github.com/evolution-foundation/evolution-api/pull/2133) | Autoria do PR e [comentário de 2025-10-26](https://github.com/evolution-foundation/evolution-api/pull/2133#issuecomment-3448840341), descrevendo a proposta. | Fechado, sem merge e sem resposta posterior ao nosso comentário. Manter como histórico; as alegações de desempenho do comentário não foram revalidadas nesta consulta. |
+
+Pendência do **#2579**:
+
+- `dpaes`, em **2026-06-11 às 23:16**, [pediu direcionar a contribuição para `develop`](https://github.com/evolution-foundation/evolution-api/pull/2579#issuecomment-4687001387).
+- `NeritonDias`, em **2026-06-25 às 22:36**, [reforçou o pedido de reabrir contra `develop`](https://github.com/evolution-foundation/evolution-api/pull/2579#issuecomment-4805907492).
+- Não havia resposta nossa depois desses pedidos. Para retomar a contribuição,
+  conferir a base atual e adaptar/validar o patch em `develop` antes de responder
+  ou alterar o PR. Esta revisão documental não executou essa retomada.
+
+### Como atualizar o acompanhamento
+
+Consultar autoria, comentários de conversa, comentários inline e revisões. A busca
+`involves:`/`commenter:` é auxiliar: nesta consulta ela não retornou o #117, apesar
+do comentário existir. Conferir também os links diretos e os endpoints paginados
+de comentários; não concluir ausência de participação só pelo índice de busca.
+
+```sh
+gh api --paginate 'repos/evolution-foundation/evolution-go/issues/comments?per_page=100&sort=created&direction=desc'
+gh api --paginate 'repos/evolution-foundation/evolution-go/pulls/comments?per_page=100&sort=created&direction=desc'
+gh pr view 117 --repo evolution-foundation/evolution-go --json state,mergedAt,author,comments,reviews
+gh pr view 2579 --repo evolution-foundation/evolution-api --json state,mergedAt,baseRefName,author,comments,reviews
+```
+
+Filtrar os resultados pela conta `cesar-carlos`, preservando links e datas. Ao atualizar,
+revalidar estado/merge e registrar respostas posteriores à nossa participação,
+distinguindo pessoas de bots. Atualizar a data da consulta e a pendência correspondente;
+revisões antigas não comprovam aprovação do head atual. Consultar não autoriza enviar
+mensagens ou modificar branches/PRs. O estado público de um PR não substitui os critérios
+de retirada de patches do [guia de manutenção](MAINTENANCE.md).
+
+## Revisões técnicas de Evolution Go
+
+Revisões técnicas e complementos locais. Uma contribuição precisa ser adaptada
 à base do PR escolhido e validada nela antes de ser enviada. Commits completos
 do fork incluem diferenças que não pertencem necessariamente ao PR original.
-
-## Evolution Go
 
 | PR / head comparado | Complemento implementado no fork | Regressões para acompanhar a contribuição |
 |---|---|---|
@@ -58,15 +136,19 @@ teste comprova consistência interna e preservação dos IDs/contexto; não comp
 aceitação do servidor nem seleção real. A homologação descrita em
 [INTERACTIVE-COMPATIBILITY.md](INTERACTIVE-COMPATIBILITY.md) permanece necessária.
 
-Na entrega de mensagens interativas não foram enviados novos comentários nem
-alteradas branches de terceiros. Os links e arquivos acima tornam as propostas revisáveis; publicação de
-contribuições aos autores é uma etapa própria, após autorização de envio.
+Na entrega dos complementos aos PRs #182/#184/#207/#212 e aos PRs de Whatsmeow
+#1146/#1221/#1235 não foram enviados novos comentários nem alteradas branches de
+terceiros. Na consulta de 2026-10-10, não foram encontrados comentários de
+`cesar-carlos` nessas sete discussões. Os links e arquivos acima tornam as propostas
+revisáveis; publicação de contribuições aos autores é uma etapa própria, após
+autorização de envio. A contribuição publicada ao #117 está registrada separadamente.
 
 ## Armazenamento de sessões — revisão em 2026-10-09
 
-Estado inicial: **revisados, com implementação pendente**. Referência principal:
+Estado inicial em 2026-10-09: **revisados, com implementação pendente**; integração
+e publicação posteriores estão registradas abaixo. Referência principal:
 [#117](https://github.com/evolution-foundation/evolution-go/pull/117).
-A integração será seletiva, não um merge integral das alternativas abaixo.
+A decisão foi pela integração seletiva, não por merge integral das alternativas abaixo.
 
 | PR | Head comparado | Aproveitamento / defeito evitado |
 |---|---|---|
@@ -79,7 +161,8 @@ A integração será seletiva, não um merge integral das alternativas abaixo.
 | #131 | `f5892fdb14cb1f631f414a708b82685da8527d6e` | Revisado como alternativa; corrida entre leitura fora do mutex e escrita reproduzida com -race. |
 | #200 | `58cf23ab5e27c8f70757ab7a56f52bd9efa83e41` | Revisado como alternativa; não transportar mapa concorrente sem proteção nem fechamento antes de parar consumidores. |
 
-Heads serão revalidados antes da contribuição ao #117. A revisão isolada reproduziu
+Os heads foram a referência da revisão; a base usada na contribuição ao #117
+está registrada na integração abaixo. A revisão isolada reproduziu
 falha permanente no #206 e corrida no #131. Os helpers de #117/#194 recuperaram após
 falha e compartilharam o container em 32 chamadas. Isso não valida o ciclo completo,
 WhatsApp real, nem implica aprovação do mantenedor.
