@@ -44,7 +44,7 @@ type SendService interface {
 	SendContact(data *ContactStruct, instance *instance_model.Instance) (*MessageSendStruct, error)
 	SendButton(data *ButtonStruct, instance *instance_model.Instance) (*MessageSendStruct, error)
 	SendList(data *ListStruct, instance *instance_model.Instance) (*MessageSendStruct, error)
-	SendCarousel(data *CarouselStruct, instance *instance_model.Instance) (*MessageSendStruct, error)
+	SendCarousel(ctx context.Context, data *CarouselStruct, instance *instance_model.Instance) (*MessageSendStruct, error)
 	SendStatusText(data *StatusTextStruct, instance *instance_model.Instance) (*MessageSendStruct, error)
 	SendStatusMediaUrl(data *StatusMediaStruct, instance *instance_model.Instance) (*MessageSendStruct, error)
 	SendStatusMediaFile(data *StatusMediaStruct, fileData []byte, instance *instance_model.Instance) (*MessageSendStruct, error)
@@ -283,8 +283,7 @@ type ListStruct struct {
 // CarouselButtonStruct is a button attached to a single carousel card.
 //
 // IMPORTANT — this struct is different from `Button` (used in /send/button):
-// it has NO dedicated `url` or `phoneNumber` fields. For URL and CALL buttons
-// you must put the link / phone number in the `id` field.
+// URL and CALL accept id or the url/phoneNumber alias; conflicts are rejected.
 //
 //   - REPLY (default): uses `displayText` + `id` as callback payload.
 //   - URL:   uses `displayText` + `id` (put the URL here).
@@ -293,12 +292,16 @@ type ListStruct struct {
 //
 // PIX buttons are NOT supported inside carousel cards — use /send/button instead.
 //
-// WhatsApp Web rendering quirk (NOT enforced by the server):
+// WhatsApp Web compatibility:
 // avoid mixing REPLY with CTA buttons (URL/CALL/COPY) in the same card —
-// mixed sets do not render on WhatsApp Web. Prefer only-REPLY or only-CTAs per card.
+// mixed sets do not render on WhatsApp Web and are rejected before sending.
 type CarouselButtonStruct struct {
-	// Button kind (case-insensitive). One of: REPLY (default), URL, CALL, COPY.
-	Type string `json:"type" enums:"REPLY,URL,CALL,COPY,reply,url,call,copy" example:"REPLY"`
+	// Optional URL alias for id; conflicting values are rejected.
+	URL string `json:"url,omitempty"`
+	// Optional phone number alias for id; conflicting values are rejected.
+	PhoneNumber string `json:"phoneNumber,omitempty"`
+	// Button kind (case-insensitive). One of: REPLY (default), URL, CALL, COPY or COPY_CODE.
+	Type string `json:"type" enums:"REPLY,URL,CALL,COPY,COPY_CODE,reply,url,call,copy,copy_code" example:"REPLY"`
 	// Label rendered inside the button.
 	DisplayText string `json:"displayText" example:"Quero saber mais"`
 	// Context-dependent: REPLY payload, URL target (type=URL) or phone number (type=CALL).
@@ -308,7 +311,7 @@ type CarouselButtonStruct struct {
 }
 
 // CarouselCardHeaderStruct is the top area of a carousel card.
-// Either `imageUrl` OR `videoUrl` may be provided (image takes precedence when both are set).
+// Either `imageUrl` OR `videoUrl` may be provided; supplying both is rejected.
 type CarouselCardHeaderStruct struct {
 	// Optional visible title above the media.
 	Title string `json:"title,omitempty" example:"Oferta do dia"`
@@ -2274,239 +2277,6 @@ func (s *sendService) sendMessageContext(ctx context.Context, instance *instance
 
 	s.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Message sent to %s", instance.Id, data.Number)
 	return messageSent, nil
-}
-
-func (s *sendService) SendCarousel(data *CarouselStruct, instance *instance_model.Instance) (*MessageSendStruct, error) {
-	client, err := s.ensureClientConnected(instance.Id)
-	if err != nil {
-		return nil, err
-	}
-
-	formatJid := true
-	if data.FormatJid != nil {
-		formatJid = *data.FormatJid
-	}
-
-	var recipient types.JID
-	var ok bool
-	recipient, ok = utils.ParseJID(data.Number)
-	if !ok && formatJid {
-		s.loggerWrapper.GetLogger(instance.Id).LogError("[%s] Error validating message fields", instance.Id)
-		return nil, errors.New("invalid phone number")
-	} else if !ok && !formatJid {
-		recipient = types.JID{
-			User:   data.Number,
-			Server: types.DefaultUserServer,
-		}
-	}
-
-	// Build carousel cards
-	cards := make([]*waE2E.InteractiveMessage, len(data.Cards))
-	messageVersion := int32(1)
-
-	s.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Building carousel for %s with %d cards", instance.Id, recipient.String(), len(data.Cards))
-
-	for i, card := range data.Cards {
-		// Each card MUST have both header and body for carousel to work
-		interactiveCard := &waE2E.InteractiveMessage{
-			Body: &waE2E.InteractiveMessage_Body{
-				Text: proto.String(card.Body.Text),
-			},
-			Header: &waE2E.InteractiveMessage_Header{
-				Title:              proto.String(card.Header.Title),
-				Subtitle:           proto.String(card.Header.Subtitle),
-				HasMediaAttachment: proto.Bool(false),
-			},
-		}
-
-		// Add media to header if URL provided
-		if card.Header.ImageUrl != "" || card.Header.VideoUrl != "" {
-			header := interactiveCard.Header
-
-			if card.Header.ImageUrl != "" {
-				// Download image
-				resp, err := http.Get(card.Header.ImageUrl)
-				if err == nil {
-					defer resp.Body.Close()
-					fileData, err := io.ReadAll(resp.Body)
-					if err == nil {
-						uploaded, err := client.Upload(context.Background(), fileData, whatsmeow.MediaImage)
-						if err == nil {
-							// Generate JPEG thumbnail for iOS compatibility
-							jpegThumb := makeJPEGThumbnail(fileData, 72)
-							imgWidth, imgHeight := imageDimensions(fileData)
-
-							header.HasMediaAttachment = proto.Bool(true)
-							header.Media = &waE2E.InteractiveMessage_Header_ImageMessage{
-								ImageMessage: &waE2E.ImageMessage{
-									URL:           proto.String(uploaded.URL),
-									DirectPath:    proto.String(uploaded.DirectPath),
-									MediaKey:      uploaded.MediaKey,
-									Mimetype:      proto.String("image/jpeg"),
-									FileEncSHA256: uploaded.FileEncSHA256,
-									FileSHA256:    uploaded.FileSHA256,
-									FileLength:    proto.Uint64(uint64(len(fileData))),
-									JPEGThumbnail: jpegThumb,
-									Width:         imgWidth,
-									Height:        imgHeight,
-								},
-							}
-						}
-					}
-				}
-			} else if card.Header.VideoUrl != "" {
-				// Download and upload video
-				resp, err := http.Get(card.Header.VideoUrl)
-				if err == nil {
-					defer resp.Body.Close()
-					fileData, err := io.ReadAll(resp.Body)
-					if err == nil {
-						uploaded, err := client.Upload(context.Background(), fileData, whatsmeow.MediaVideo)
-						if err == nil {
-							header.HasMediaAttachment = proto.Bool(true)
-							header.Media = &waE2E.InteractiveMessage_Header_VideoMessage{
-								VideoMessage: &waE2E.VideoMessage{
-									URL:           proto.String(uploaded.URL),
-									DirectPath:    proto.String(uploaded.DirectPath),
-									MediaKey:      uploaded.MediaKey,
-									Mimetype:      proto.String("video/mp4"),
-									FileEncSHA256: uploaded.FileEncSHA256,
-									FileSHA256:    uploaded.FileSHA256,
-									FileLength:    proto.Uint64(uint64(len(fileData))),
-								},
-							}
-						}
-					}
-				}
-			}
-		}
-
-		// Add footer if exists
-		if card.Footer != "" {
-			interactiveCard.Footer = &waE2E.InteractiveMessage_Footer{
-				Text: proto.String(card.Footer),
-			}
-		}
-
-		// Add buttons if exist
-		if len(card.Buttons) > 0 {
-			buttons := make([]*waE2E.InteractiveMessage_NativeFlowMessage_NativeFlowButton, len(card.Buttons))
-			for j, btn := range card.Buttons {
-				buttonType := strings.ToUpper(btn.Type)
-				if buttonType == "" {
-					buttonType = "REPLY" // Default type
-				}
-
-				var buttonName string
-				var buttonParamsMap map[string]string
-
-				switch buttonType {
-				case "URL":
-					// URL button - opens a link
-					buttonName = "cta_url"
-					buttonParamsMap = map[string]string{"display_text": btn.DisplayText, "url": btn.Id}
-				case "CALL":
-					// Call button - initiates a phone call
-					buttonName = "cta_call"
-					buttonParamsMap = map[string]string{"display_text": btn.DisplayText, "phone_number": btn.Id}
-				case "COPY":
-					// Copy button - copies text to clipboard
-					buttonName = "cta_copy"
-					buttonParamsMap = map[string]string{"display_text": btn.DisplayText, "copy_code": btn.CopyCode}
-				case "REPLY":
-					fallthrough
-				default:
-					// Quick reply button (default)
-					buttonName = "quick_reply"
-					buttonParamsMap = map[string]string{"display_text": btn.DisplayText, "id": btn.Id}
-				}
-
-				encodedParams, err := json.Marshal(buttonParamsMap)
-				if err != nil {
-					return nil, fmt.Errorf("carousel button params: %w", err)
-				}
-				buttonParams := string(encodedParams)
-
-				buttons[j] = &waE2E.InteractiveMessage_NativeFlowMessage_NativeFlowButton{
-					Name:             proto.String(buttonName),
-					ButtonParamsJSON: proto.String(buttonParams),
-				}
-			}
-
-			// Cards in carousel: do NOT set MessageParamsJSON or MessageVersion
-			// (matching PAPI Node.js behavior for iOS compatibility)
-			interactiveCard.InteractiveMessage = &waE2E.InteractiveMessage_NativeFlowMessage_{
-				NativeFlowMessage: &waE2E.InteractiveMessage_NativeFlowMessage{
-					Buttons: buttons,
-				},
-			}
-		}
-
-		cards[i] = interactiveCard
-	}
-
-	// Build carousel message (do NOT set CarouselCardType - matching PAPI Node.js for iOS)
-	interactiveMsg := &waE2E.InteractiveMessage{
-		InteractiveMessage: &waE2E.InteractiveMessage_CarouselMessage_{
-			CarouselMessage: &waE2E.InteractiveMessage_CarouselMessage{
-				Cards:          cards,
-				MessageVersion: &messageVersion,
-			},
-		},
-	}
-
-	// Add body if provided (main message above carousel)
-	if data.Body != "" {
-		interactiveMsg.Body = &waE2E.InteractiveMessage_Body{
-			Text: proto.String(data.Body),
-		}
-	}
-
-	// Add footer if provided (text below carousel)
-	if data.Footer != "" {
-		interactiveMsg.Footer = &waE2E.InteractiveMessage_Footer{
-			Text: proto.String(data.Footer),
-		}
-	}
-
-	// ContextInfo is REQUIRED for iOS compatibility
-	// Even if empty, iOS requires this field to display carousel
-	contextInfo := &waE2E.ContextInfo{}
-
-	// Add quoted message if exists
-	if data.Quoted.MessageID != "" {
-		contextInfo.StanzaID = proto.String(data.Quoted.MessageID)
-		if data.Quoted.Participant != "" {
-			participantJID, ok := utils.ParseJID(data.Quoted.Participant)
-			if ok {
-				contextInfo.Participant = proto.String(participantJID.String())
-			}
-		}
-	}
-
-	// Always set ContextInfo (required for iOS)
-	interactiveMsg.ContextInfo = contextInfo
-
-	// Build final message with MessageContextInfo for proper notification delivery
-	msg := &waE2E.Message{
-		InteractiveMessage: interactiveMsg,
-		MessageContextInfo: &waE2E.MessageContextInfo{
-			DeviceListMetadata: &waE2E.DeviceListMetadata{},
-		},
-	}
-
-	message, err := s.SendMessage(instance, msg, "InteractiveMessage", &SendDataStruct{
-		Number: data.Number,
-		Delay:  data.Delay,
-	})
-
-	if err != nil {
-		s.loggerWrapper.GetLogger(instance.Id).LogError("[%s] Error sending carousel: %v", instance.Id, err)
-		return nil, err
-	}
-
-	s.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Carousel sent to %s with %d cards", instance.Id, data.Number, len(data.Cards))
-	return message, nil
 }
 
 func (s *sendService) SendStatusText(data *StatusTextStruct, instance *instance_model.Instance) (*MessageSendStruct, error) {

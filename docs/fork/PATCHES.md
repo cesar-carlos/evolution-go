@@ -190,6 +190,9 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 
 ## F-013 — Protocolo interativo e seleção sem ambiguidade
 
+Complemento local em 2026-11-17: a validação e mídia de carrossel foram tratadas
+em F-026. Os payloads de listas/botões e os patches da biblioteca permanecem.
+
 - Commits: `f5fd551`, complemento `cdc7388`; [PR do fork #3](https://github.com/cesar-carlos/evolution-go/pull/3).
 - Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
 - Problema/esperado: native-flow sem metadados, duplicação de `biz`, respostas com
@@ -216,6 +219,9 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
   aprovados, seguido de homologação. Remover `replace` somente após comprovar essa paridade.
 
 ## F-014 — Parsing de respostas interativas
+
+Complemento local em 2026-11-17: F-027 corrige o encaminhamento ao NATS global;
+o parser e os contratos de `ButtonClick` permanecem.
 
 - Commits: `f5fd551`; [PR do fork #3](https://github.com/cesar-carlos/evolution-go/pull/3).
 - Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
@@ -603,3 +609,41 @@ Build/vet completos e testes/race com `-count=1` passaram novamente em Linux,
 incluindo PostgreSQL 16 descartável e SQLite temporário. Nenhuma mudança de
 código ou merge adicional foi necessário.
 
+
+## F-026 — Validação e falhas de mídia no carrossel
+
+- Estado: `local`; revisão em 2026-11-17 sobre main `8e3bff1`, base oficial 0.7.3.
+- Implementação: branch `codex/fix-carousel-nats`; ainda sem release própria.
+- Problema: falhas HTTP/upload ignoradas, leitura sem limite, tipos desconhecidos
+  convertidos em REPLY, campos URL/CALL ignorados e panic no corpo JSON nulo.
+- Correção: preparação cancelável e limitada, aborta no erro de mídia; validação
+  antes de operações externas; preserva id e aceita url/phoneNumber/COPY_CODE,
+  rejeitando conflitos. Mantém metadados e repassa formatJid/quoted. A abertura
+  de sessão também respeita o contexto da requisição.
+- Referência: [issue #51](https://github.com/evolution-foundation/evolution-go/issues/51).
+- Evidências: `carousel_test.go`, `interactive_validation_test.go`; cenários de
+  erro, cancelamento, contratos antigos/aliases e preservação do payload.
+- Contrato/migração/limitações: [CAROUSEL-NATS.md](CAROUSEL-NATS.md).
+  Sem homologação em aparelho e sem alteração da versão em produção.
+- Retirada: upstream equivalente em validação, recursos e serialização, comprovado
+  pelas regressões e homologação real de envio/cliques.
+
+## F-027 — BUTTON_CLICK no NATS global
+
+- Estado: `local`; revisão em 2026-11-17 sobre main `8e3bff1`, base oficial 0.7.3.
+- Implementação: branch `codex/fix-carousel-nats`; ainda sem release própria.
+- Problema: assinatura BUTTON_CLICK aceita, mas sem mapeamento no dispatch global.
+- Correção: ButtonClick mapeia para BUTTON_CLICK, publica no subject buttonclick
+  apenas quando habilitado e assinado; preserva payload e identificação.
+- Referência: [issue #193](https://github.com/evolution-foundation/evolution-go/issues/193).
+  Esta tarefa corrige BUTTON_CLICK, não os outros eventos mencionados na issue.
+- Evidências: `TestGlobalNATSButtonClick` verifica o dispatch real com produtor
+  falso, inclusive desabilitado, sem assinatura e falha sem duplicar tentativas.
+- Limitações: entrega best effort existente; não comprova broker real nem clique
+  em aparelho. [Contrato](CAROUSEL-NATS.md).
+- Retirada: upstream inclui o mapeamento e passa as regressões de dispatch.
+
+Validação conjunta de F-026/F-027: build/vet/testes/race completos da aplicação
+e testes/race da biblioteca fixada aprovados em Docker Linux/Go 1.26.10, com
+PostgreSQL 16 descartável e SQLite temporário. Swagger regenerado por make
+(swag v1.16.3), links e diff conferidos; detalhes em [CAROUSEL-NATS.md](CAROUSEL-NATS.md).

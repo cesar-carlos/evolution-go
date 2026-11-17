@@ -2548,6 +2548,8 @@ func (w *whatsmeowService) SendToGlobalQueues(eventType string, payload []byte, 
 		// Mapeia o evento para grupo (necessário para NATS por enquanto)
 		var globalEventType string
 		switch eventType {
+		case "ButtonClick":
+			globalEventType = "BUTTON_CLICK"
 		case "Message":
 			globalEventType = "MESSAGE"
 		case "SendMessage":
