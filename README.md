@@ -10,22 +10,22 @@
 
 Versão deste código: **0.7.3-cesar.2**, com [compatibilidade interativa](docs/fork/INTERACTIVE-COMPATIBILITY.md),
 previews/imagens, interfaces Manager/Sender e armazenamento/ciclo de sessões corrigidos.
-Esta revisão inclui [correções de carrossel e BUTTON_CLICK no NATS](docs/fork/CAROUSEL-NATS.md).
+Inclui [correções de carrossel e BUTTON_CLICK no NATS](docs/fork/CAROUSEL-NATS.md).
 [Participações, respostas e complementos aos PRs de origem](docs/fork/UPSTREAM-CONTRIBUTIONS.md).
-A versão anterior 0.7.3-cesar.1 foi implantada em produção em 2026-11-17, conforme o
-[registro da implantação](docs/fork/deployments/2026-11-17-0.7.3-cesar.1.md). Consulte as
-[mudanças de contrato e migração da base 0.7.3](docs/fork/UPGRADE-0.7.3.md).
-Última imagem publicada e verificada: [0.7.3-cesar.1](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.3-cesar.1).
+
+Publicação verificada em 2026-11-17.
+Consulte as [mudanças de contrato e migração da base 0.7.3](docs/fork/UPGRADE-0.7.3.md).
+Última imagem publicada e verificada: [0.7.3-cesar.2](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.3-cesar.2).
 
 ```sh
-docker pull ghcr.io/cesar-carlos/evolution-go@sha256:9ad6344a6df7b8da357395202d2c7fec790910e2033979b118b9104030d43084
+docker pull ghcr.io/cesar-carlos/evolution-go@sha256:8f169294d378ef464f0a3fc7d9f8bc710bbf4f5dbf6a1a72a55bbfa892d8884b
 ```
 
 O digest acima foi verificado por download anônimo em ambas as arquiteturas.
-[Registro da verificação](docs/fork/releases/v0.7.3-cesar.1.json). Use essa referência
+[Registro da verificação](docs/fork/releases/v0.7.3-cesar.2.json). Use essa referência
 completa em `EVOLUTION_IMAGE` para instalação reproduzível.
 
-A versão anterior e seu digest permanecem no [registro de 0.7.2-cesar.4](docs/fork/releases/v0.7.2-cesar.4.json).
+A versão anterior e seu digest permanecem no [registro de 0.7.3-cesar.1](docs/fork/releases/v0.7.3-cesar.1.json).
 Antes de reverter, confira a compatibilidade do banco conforme o guia de manutenção.
 
 Imagem inicial (referência de reversão): `ghcr.io/cesar-carlos/evolution-go:0.7.2-cesar.1`.
