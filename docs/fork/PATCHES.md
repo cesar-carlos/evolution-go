@@ -664,7 +664,7 @@ Publicação 0.7.3-cesar.2 verificada em 2026-11-17: [evidência da imagem](rele
 ## F-028 — Metadados de transporte de listas e carrosséis
 
 - Estado: `local`; revisão em 2026-11-18 sobre main `e06d2fb`, base oficial 0.7.3.
-- Implementação: branch `codex/f028-interactive-transport`, ainda sem release; go.mod permanece
+- Implementação: `cb64934`, PR #22 integrado em `802887e`; candidato `0.7.3-cesar.3`. go.mod permanece
   fixado em Whatsmeow `3e04a7b2fcdf`, preservando os patches anteriores.
 - Problema: lista rejeitada pelo WhatsApp com 405 (API HTTP 500); carrossel
   ausente no celular apesar de cards visíveis no Desktop. A biblioteca omite
@@ -694,3 +694,11 @@ de `go.mau.fi/whatsmeow` também aprovados. Formatação restrita aos Go alterad
 links locais e `git diff --check` conferidos. Estes resultados são locais;
 os checks de CI devem ser consultados no PR da branch de implementação.
 Swagger não regenerado porque o contrato HTTP permanece inalterado.
+
+## Release 0.7.3-cesar.3
+
+Candidato com F-028 e todos os patches anteriores, sobre a base oficial 0.7.3.
+Sem mudanças de dependências, banco, configuração ou contrato HTTP em relação
+a 0.7.3-cesar.2. Metadados de transporte corrigidos; aceitação da lista e
+renderização do carrossel no celular ainda dependem de homologação real.
+Publicação, digest e implantação são verificados separadamente.
