@@ -755,3 +755,11 @@ existentes permanecem válidas; URL vazia é inerte e NATS não é habilitado pe
 atualização. Entrega real ao broker e consumidores continua pendente de homologação.
 CI da implementação integrada aprovada em [44315003787](https://github.com/cesar-carlos/evolution-go/actions/runs/44315003787).
 Publicação, digest e implantação são verificados separadamente.
+
+Publicação e implantação verificadas em 2026-11-18: [evidência da release](releases/v0.7.3-cesar.4.json).
+Workflow aprovado; digest e pulls anônimos amd64/arm64 confirmados. Backup de bancos
+e sessões com checksums e restauração de teste aprovados antes da implantação.
+API saudável, HTTP público 200, 37 instâncias e as mesmas 21 conectadas; configurações
+e volumes preservados. NATS continua desabilitado globalmente e por instância,
+com URL vazia. Entrega real ao broker permanece não homologada.
+

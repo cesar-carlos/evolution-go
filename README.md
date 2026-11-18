@@ -16,17 +16,17 @@ Inclui F-029: [falhas e recuperação do producer NATS](docs/fork/NATS-DELIVERY.
 
 Publicação verificada em 2026-11-18.
 Consulte as [mudanças de contrato e migração da base 0.7.3](docs/fork/UPGRADE-0.7.3.md).
-Última imagem publicada e verificada: [0.7.3-cesar.3](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.3-cesar.3).
+Última imagem publicada e verificada: [0.7.3-cesar.4](https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.3-cesar.4).
 
 ```sh
-docker pull ghcr.io/cesar-carlos/evolution-go@sha256:1e974977e6d690b23e386836ac7e26d41db35e6bcb0b56766cd72e685b505125
+docker pull ghcr.io/cesar-carlos/evolution-go@sha256:d9bf98f80e119b0c4fdb3c0f32007357f72a0a54f108f39fab019caa50a5de32
 ```
 
 O digest acima foi verificado por download anônimo em ambas as arquiteturas.
-[Registro da verificação](docs/fork/releases/v0.7.3-cesar.3.json). Use essa referência
+[Registro da verificação](docs/fork/releases/v0.7.3-cesar.4.json). Use essa referência
 completa em `EVOLUTION_IMAGE` para instalação reproduzível.
 
-A versão anterior e seu digest permanecem no [registro de 0.7.3-cesar.2](docs/fork/releases/v0.7.3-cesar.2.json).
+A versão anterior e seu digest permanecem no [registro de 0.7.3-cesar.3](docs/fork/releases/v0.7.3-cesar.3.json).
 Antes de reverter, confira a compatibilidade do banco conforme o guia de manutenção.
 
 Imagem inicial (referência de reversão): `ghcr.io/cesar-carlos/evolution-go:0.7.2-cesar.1`.
