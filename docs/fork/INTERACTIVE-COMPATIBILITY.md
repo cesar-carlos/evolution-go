@@ -14,7 +14,7 @@ usavam IDs repetidos, atribua um ID por opção e ajuste o roteamento da respost
 IDs omitidos são gerados sem colisão entre seções nem com IDs explícitos.
 `buttonText` omitido/vazio usa "Ver Menu". Seções precisam conter opções.
 
-Complemento local F-028 (2026-11-18, ainda sem release): o envio de menus
+Complemento local F-028 (2026-11-18, incluído na release 0.7.3-cesar.3): o envio de menus
 SINGLE_SELECT fornece `biz/list type="product_list" v="2"` por `AdditionalNodes`.
 O protobuf continua SINGLE_SELECT, com os mesmos IDs e contexto. O tipo de
 roteamento do nó não é necessariamente o enum do payload. A correspondência

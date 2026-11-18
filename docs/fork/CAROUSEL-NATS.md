@@ -6,7 +6,7 @@ consulte os registros de releases e de produção.
 
 Investigação posterior em 2026-11-18: a validação de payload/mídia de F-026
 não corrigia a ausência de metadados biz no transporte do carrossel. F-028,
-ainda sem release, acrescenta esses nós e ajusta o roteamento de
+incluído na release 0.7.3-cesar.3, acrescenta esses nós e ajusta o roteamento de
 listas rejeitadas com 405. Veja [compatibilidade interativa](INTERACTIVE-COMPATIBILITY.md).
 Renderização no celular continua pendente de homologação da correção.
 
