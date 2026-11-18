@@ -32,18 +32,42 @@ não muda botões, PIX, respostas ou wrappers. Metadados explícitos biz/hsm tê
 precedência e os demais nós adicionais são preservados. A biblioteca continua
 responsável pela composição final e evita duplicação de biz.
 
-Essas alterações corrigem divergências locais de transporte; não comprovam
-aceitação remota nem renderização móvel. A versão publicada 0.7.3-cesar.2 ainda
+Na versão 0.7.3-cesar.2, o teste anterior
 apresentou lista rejeitada e carrossel ausente no celular, com cards visíveis
-no Desktop. Cliente/SO móvel e comportamento de navegação não foram confirmados.
-Registrar renderização, seleção e resposta após homologar a futura versão.
+no Desktop. A homologação abaixo registra o resultado após F-028 na 0.7.3-cesar.3.
 
 `ButtonClick` preserva os campos existentes e reconhece respostas encapsuladas,
 incluindo `selected_row_id` no JSON de native-flow. Os nós de envio e o parser de
 recebimento são testados separadamente. CTA de URL/telefone pode abrir uma ação
 sem produzir uma resposta de clique: não inferir confirmação onde ela não existe.
 
-## Homologação pendente
+## Homologação móvel de F-028 — 2026-11-18
+
+Teste autorizado em conversa individual com a release **0.7.3-cesar.3**, commit
+`d8b33f35867a10b7041c5cd5a9ba79e071f57c72`, imagem pelo digest
+`sha256:1e974977e6d690b23e386836ac7e26d41db35e6bcb0b56766cd72e685b505125`.
+Ambos os envios retornaram **HTTP 200**, sem o erro 405 da lista.
+O usuário confirmou no celular a lista com uma opção e o carrossel com dois cards.
+A API registrou os três eventos ButtonClick, com os IDs esperados de cada seleção:
+
+| Opção do teste | Resposta recebida pela API |
+|---|---|
+| Confirmar lista | `list_response` |
+| Confirmar card 1 | `template_button_reply` |
+| Confirmar card 2 | `template_button_reply` |
+
+Resultado: exibição no celular e retorno das três interações homologados **nesse
+cenário**. Modelo do aparelho, sistema operacional e versão do cliente não foram
+informados; não extrapolar para todos os clientes Android/iOS/Web, grupos,
+listas multisseção ou outros tipos de mídia/botões. A confirmação não atesta
+entrega a consumidores externos: NATS estava desabilitado, e não houve validação
+de entrega pelo broker nem confirmação correlacionada do consumidor de webhook.
+Identificadores da instância, telefone, tokens e logs brutos não fazem parte deste registro.
+
+A [evidência da publicação](releases/v0.7.3-cesar.3.json) é o registro anterior
+à homologação e permanece inalterada; este registro acrescenta o resultado funcional.
+
+## Homologações ainda pendentes
 
 Previews respeitam campos explícitos e permitem texto quando a página/imagem/upload
 falha. Cancelar a requisição interrompe o trabalho; falha de preview não repete o
@@ -60,7 +84,8 @@ anonimizado, renderização, ID da seleção e evento para Android, iOS e Web.
 Cobrir reply, CTA, listas multisseção, carrosséis, menções/citações e mídia.
 Inspecionar PIX sem efetuar pagamento. Não enviar mensagens reais na CI.
 
-Até essa homologação, as mudanças de protocolo são compatibilidade experimental.
+A validação móvel acima cobre somente o cenário descrito. As demais combinações
+de protocolo continuam experimentais até homologação específica.
 
 Os complementos preparados para os PRs de origem estão em
 [UPSTREAM-CONTRIBUTIONS.md](UPSTREAM-CONTRIBUTIONS.md).
