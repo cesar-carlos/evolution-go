@@ -2149,9 +2149,7 @@ func (s *sendService) sendMessageContext(ctx context.Context, instance *instance
 	}
 
 	// Injetar nodes biz/bot customizados (PIX, botões interativos, etc.) no stanza XMPP.
-	if data.AdditionalNodes != nil {
-		sendExtra.AdditionalNodes = data.AdditionalNodes
-	}
+	sendExtra.AdditionalNodes = interactiveSendNodes(msg, data.AdditionalNodes)
 
 	response, err := client.SendMessage(ctx, recipient, msg, sendExtra)
 	if err != nil {

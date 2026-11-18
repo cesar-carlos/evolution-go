@@ -14,12 +14,29 @@ usavam IDs repetidos, atribua um ID por opção e ajuste o roteamento da respost
 IDs omitidos são gerados sem colisão entre seções nem com IDs explícitos.
 `buttonText` omitido/vazio usa "Ver Menu". Seções precisam conter opções.
 
-O atributo `type` do nó `biz/list` acompanha o tipo do payload: menus
-SINGLE_SELECT usam `single_select`; PRODUCT_LIST usa `product_list`. A primeira
-implementação do fork anunciava ambos como `product_list`. A revisão removeu
-essa inconsistência e testa os IDs/contexto e todos os wrappers suportados.
-Essa correspondência não comprova aceitação remota; registrar renderização,
-seleção e resposta de cada tipo na homologação abaixo.
+Complemento local F-028 (2026-11-18, ainda sem release): o envio de menus
+SINGLE_SELECT fornece `biz/list type="product_list" v="2"` por `AdditionalNodes`.
+O protobuf continua SINGLE_SELECT, com os mesmos IDs e contexto. O tipo de
+roteamento do nó não é necessariamente o enum do payload. A correspondência
+anterior com `single_select` foi uma hipótese de consistência interna; após
+rejeição remota 405, retomamos o formato relatado como funcional na
+[issue #204](https://github.com/evolution-foundation/evolution-go/issues/204).
+O 405 vem do WhatsApp; a API o expõe como erro operacional HTTP 500.
+Não se trata de método HTTP incorreto nem de motivo para repetir o envio.
+
+Para carrossel, F-028 fornece `biz/interactive type="native_flow" v="1"` com
+`native_flow name="mixed" v="9"` e metadados de negócio equivalentes aos botões.
+A biblioteca fixada reconhecia somente native-flow direto, omitindo esse nó
+para CarouselMessage. A extensão é limitada aos prompts diretos dos builders;
+não muda botões, PIX, respostas ou wrappers. Metadados explícitos biz/hsm têm
+precedência e os demais nós adicionais são preservados. A biblioteca continua
+responsável pela composição final e evita duplicação de biz.
+
+Essas alterações corrigem divergências locais de transporte; não comprovam
+aceitação remota nem renderização móvel. A versão publicada 0.7.3-cesar.2 ainda
+apresentou lista rejeitada e carrossel ausente no celular, com cards visíveis
+no Desktop. Cliente/SO móvel e comportamento de navegação não foram confirmados.
+Registrar renderização, seleção e resposta após homologar a futura versão.
 
 `ButtonClick` preserva os campos existentes e reconhece respostas encapsuladas,
 incluindo `selected_row_id` no JSON de native-flow. Os nós de envio e o parser de

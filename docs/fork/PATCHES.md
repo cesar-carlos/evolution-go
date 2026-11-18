@@ -192,6 +192,9 @@ ausência de credenciais. Isso não comprova integrações reais nem todos os ca
 
 Complemento local em 2026-11-17: a validação e mídia de carrossel foram tratadas
 em F-026. Os payloads de listas/botões e os patches da biblioteca permanecem.
+Complemento em 2026-11-18: F-028 substitui, no envio da aplicação, a hipótese
+de equivalência entre enum SINGLE_SELECT e atributo `single_select`; mantém
+o histórico abaixo e os patches de respostas/wrappers da biblioteca.
 
 - Commits: `f5fd551`, complemento `cdc7388`; [PR do fork #3](https://github.com/cesar-carlos/evolution-go/pull/3).
 - Estado: `local`; comparação em 2026-10-09, base oficial `0.7.2`.
@@ -657,3 +660,37 @@ consulte [contrato e migração](CAROUSEL-NATS.md). Publicação e implantação
 ser verificadas e registradas separadamente pelo digest.
 
 Publicação 0.7.3-cesar.2 verificada em 2026-11-17: [evidência da imagem](releases/v0.7.3-cesar.2.json). Workflow aprovado e pulls anônimos amd64/arm64 confirmados pelo digest.
+
+## F-028 — Metadados de transporte de listas e carrosséis
+
+- Estado: `local`; revisão em 2026-11-18 sobre main `e06d2fb`, base oficial 0.7.3.
+- Implementação: branch `codex/f028-interactive-transport`, ainda sem release; go.mod permanece
+  fixado em Whatsmeow `3e04a7b2fcdf`, preservando os patches anteriores.
+- Problema: lista rejeitada pelo WhatsApp com 405 (API HTTP 500); carrossel
+  ausente no celular apesar de cards visíveis no Desktop. A biblioteca omite
+  biz para CarouselMessage e usa `single_select` no nó de roteamento de listas.
+- Correção: no pipeline de envio, AdditionalNodes fornece biz/list product_list
+  v2 para SINGLE_SELECT e biz/interactive native_flow v1/mixed v9 para carrossel.
+  Inclui metadados de negócio, preserva overrides biz/hsm e nós adicionais.
+  Não altera protobuf, IDs/contexto, mídia, botões/PIX ou parsing de respostas.
+- Referências: [Evolution Go #204](https://github.com/evolution-foundation/evolution-go/issues/204),
+  [Whatsmeow #1146](https://github.com/tulir/whatsmeow/pull/1146),
+  [Whatsmeow #1235](https://github.com/tulir/whatsmeow/pull/1235).
+- Evidências: `interactive_nodes_test.go` cobre serialização binária dos nós,
+  IDs e payload inalterados, precedência, preservação de metadados sem mutação
+  do chamador e exclusão de respostas/outros tipos; suítes existentes preservadas.
+- Limitações: hipótese de compatibilidade apoiada por código e relato upstream;
+  resultado remoto após a correção ainda não homologado. Sem envio real,
+  publicação de release ou alteração de produção nesta tarefa. Contrato HTTP/env inalterado.
+- Retirada: biblioteca fixada fornece os mesmos nós para listas/carrosséis,
+  preserva precedência/respostas e passa regressões e homologação em aparelhos.
+- Detalhes: [compatibilidade interativa](INTERACTIVE-COMPATIBILITY.md).
+
+Validação local de F-028 em 2026-11-18: Docker Linux/Go 1.26.10, CGO,
+dependências nativas de mídia, PostgreSQL 16 descartável e SQLite temporário.
+`go build ./...`, `go vet ./...`, `go test -count=1 -timeout 5m ./...` e
+`go test -race -count=1 -timeout 5m ./...` aprovados. Testes normais e com race
+de `go.mau.fi/whatsmeow` também aprovados. Formatação restrita aos Go alterados,
+links locais e `git diff --check` conferidos. Estes resultados são locais;
+os checks de CI devem ser consultados no PR da branch de implementação.
+Swagger não regenerado porque o contrato HTTP permanece inalterado.
