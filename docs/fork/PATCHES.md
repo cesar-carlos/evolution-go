@@ -710,3 +710,30 @@ respostas recebidas pela API. Escopo e limitações no registro de F-028 acima.
 Publicação, digest e implantação são verificados separadamente.
 
 Publicação 0.7.3-cesar.3 verificada em 2026-11-18: [evidência da imagem](releases/v0.7.3-cesar.3.json). Workflow aprovado e pulls anônimos amd64/arm64 confirmados pelo digest.
+
+## F-029 — Falhas e recuperação do producer NATS
+
+- Estado: `local`; revisão em 2026-11-18 sobre main `93a82db`, base oficial 0.7.3.
+- Implementação: branch `codex/f029-nats-producer`, ainda sem release. Mantém a dependência
+  nats.go v1.39.0 e os patches anteriores, incluindo F-027/F-028.
+- Problema: conexão nil retornava sucesso, `natsEnable: "true"` não publicava,
+  falha inicial não recuperava e URL vazia tentava localhost implicitamente.
+- Correção: URL vazia inerte; erro sem conexão ativa; enabled/true equivalentes;
+  reconexão limitada da biblioteca, sem buffer de replay; flush com prazo;
+  fechamento no shutdown. Falha NATS não suprime WebSocket/webhook independentes.
+- Evidências: `nats_producer_test.go` e `nats_delivery_test.go`; peer TCP local,
+  erros, recuperação, limite, não duplicação e concorrência. Regressão F-027 mantida.
+- Contratos e limites: [NATS-DELIVERY.md](NATS-DELIVERY.md). Core NATS, sem ACK
+  de consumidor/persistência; timeout após Publish é incerto. Homologação real
+  do broker pendente. Sem habilitar NATS ou alterar produção.
+- Retirada: upstream equivalente preserva contratos e passa as regressões de
+  falha/recuperação, fechamento concorrente e isolamento dos destinos.
+
+Validação local de F-029 em 2026-11-18: Docker Linux, Go 1.26.10, CGO,
+dependências nativas de mídia, PostgreSQL 16 descartável e SQLite temporário.
+`go build ./...`, `go vet ./...`, `go test -count=1 -timeout 5m ./...` e
+`go test -race -count=1 -timeout 5m ./...` aprovados. Regressões normais e com
+race de `go.mau.fi/whatsmeow` também aprovadas. Formatação limitada aos Go
+alterados e `git diff --check` conferidos. Resultados locais; os checks de CI
+ficam no PR da branch de implementação. Sem WhatsApp/NATS de produção;
+testes do producer usam somente peer TCP local controlado.

@@ -2267,9 +2267,10 @@ func (w *whatsmeowService) sendToQueueOrWebhook(instance *instance_model.Instanc
 		err := w.natsProducer.Produce(queueName, jsonData, instance.NatsEnable, instance.Id)
 		if err != nil {
 			w.loggerWrapper.GetLogger(instance.Id).LogError("[%s] Failed to send message to nats: %s", instance.Id, err)
-			return
+			// An unavailable broker must not suppress independent destinations.
+		} else {
+			w.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] NATS transport flushed (consumer delivery not confirmed)", instance.Id)
 		}
-		w.loggerWrapper.GetLogger(instance.Id).LogInfo("[%s] Message sent to nats successfully", instance.Id)
 	}
 
 	if instance.WebSocketEnable == "enabled" || instance.WebSocketEnable == "true" {

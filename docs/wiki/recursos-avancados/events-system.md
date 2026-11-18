@@ -110,7 +110,7 @@ curl -X POST http://localhost:4000/instance/connect \
     "subscribe": ["MESSAGE", "READ_RECEIPT", "GROUP", "CALL"],
     "rabbitmqEnabled": "disabled",
     "websocketEnable": "disabled",
-    "natsEnabled": "disabled"
+    "natsEnable": "disabled"
   }'
 ```
 
@@ -380,8 +380,9 @@ Publica eventos em tópicos NATS. Ideal para comunicação em tempo real com lat
 # URL de conexão NATS
 NATS_URL=nats://localhost:4222
 
-# Habilitar NATS
-NATS_ENABLED=true
+# Modo global desabilitado; habilitação por instância via natsEnable
+NATS_GLOBAL_ENABLED=false
+NATS_GLOBAL_EVENTS=
 ```
 
 ### Tópicos
@@ -389,13 +390,24 @@ NATS_ENABLED=true
 Eventos são publicados em tópicos no formato:
 
 ```
-evolution.{instance}.{event_type}
+{instanceId}.{event_type}
 ```
 
 **Exemplos**:
-- `evolution.vendas.message` - Mensagens da instância "vendas"
-- `evolution.suporte.calloffer` - Chamadas da instância "suporte"
-- `evolution.*.message` - Mensagens de todas as instâncias (wildcard)
+- `<instanceId>.message` - Mensagens da instância "vendas"
+- `<instanceId>.calloffer` - Chamadas da instância "suporte"
+- `*.message` - Mensagens de todas as instâncias (wildcard)
+
+Para instâncias, use `natsEnable: "enabled"` ou `"true"` no
+`POST /instance/connect`, preservando as assinaturas existentes. `MESSAGE` ou
+`BUTTON_CLICK` permite o clique; seu subject é `<instanceId>.buttonclick`.
+O identificador é o ID da instância, não seu nome. No modo global, configure
+`NATS_GLOBAL_ENABLED=true` e `NATS_GLOBAL_EVENTS=BUTTON_CLICK` (sem espaços);
+o subject é `buttonclick`, reunindo as instâncias. `NATS_ENABLED` e
+`natsEnabled` não são os nomes lidos pelo código.
+
+O producer usa Core NATS, sem persistência/replay/ACK do consumidor. Flush
+confirma somente uma troca com o servidor. Veja [entrega e recuperação NATS](../../fork/NATS-DELIVERY.md).
 
 ### Consumindo Eventos
 
@@ -417,9 +429,8 @@ func main() {
     defer nc.Close()
 
     // Subscrever a eventos de mensagens de todas as instâncias
-    sub, err := nc.Subscribe("evolution.*.message", func(m *nats.Msg) {
-        fmt.Printf("Recebido no tópico %s: %s
-", m.Subject, string(m.Data))
+    sub, err := nc.Subscribe("*.message", func(m *nats.Msg) {
+        fmt.Printf("Recebido no tópico %s (%d bytes)\n", m.Subject, len(m.Data))
     })
     if err != nil {
         log.Fatal(err)
@@ -568,7 +579,8 @@ AMQP_SPECIFIC_EVENTS=message,sendmessage,receipt,presence,calloffer
 
 # ===== NATS =====
 NATS_URL=nats://nats:4222
-NATS_ENABLED=true
+NATS_GLOBAL_ENABLED=false
+NATS_GLOBAL_EVENTS=
 
 # ===== WEBSOCKET =====
 # WebSocket é habilitado automaticamente
@@ -586,14 +598,14 @@ curl -X POST http://localhost:4000/instance/connect \
     "subscribe": ["MESSAGE", "GROUP", "CALL"],
     "rabbitmqEnabled": "enabled",
     "websocketEnable": "disabled",
-    "natsEnabled": "enabled"
+    "natsEnable": "enabled"
   }'
 ```
 
 **Comportamento**:
 - `rabbitmqEnabled: "enabled"` ou `"disabled"` - Habilita/desabilita RabbitMQ para esta instância
 - `websocketEnable: "disabled"` ou outro valor - Habilita/desabilita WebSocket
-- `natsEnabled: "enabled"` ou `"disabled"` - Habilita/desabilita NATS
+- `natsEnable: "enabled"` ou `"disabled"` - Habilita/desabilita NATS
 - `webhookUrl` - URL específica para esta instância
 - `subscribe` - Array com categorias de eventos: `MESSAGE`, `READ_RECEIPT`, `PRESENCE`, `HISTORY_SYNC`, `CHAT_PRESENCE`, `CALL`, `CONNECTION`, `QRCODE`, `LABEL`, `CONTACT`, `GROUP`, `NEWSLETTER`, ou `ALL`
 
@@ -865,7 +877,8 @@ WEBHOOK_URL=https://api.exemplo.com/webhook
 AMQP_URL=amqp://localhost:5672/
 AMQP_GLOBAL_ENABLED=true
 NATS_URL=nats://localhost:4222
-NATS_ENABLED=true
+NATS_GLOBAL_ENABLED=false
+NATS_GLOBAL_EVENTS=
 ```
 
 ```bash
@@ -876,7 +889,7 @@ curl -X POST http://localhost:4000/instance/connect \
     "webhookUrl": "https://api.exemplo.com/webhook-vendas",
     "rabbitmqEnabled": "enabled",
     "websocketEnable": "disabled",
-    "natsEnabled": "enabled",
+    "natsEnable": "enabled",
     "subscribe": ["MESSAGE"]
   }'
 ```
@@ -885,7 +898,7 @@ curl -X POST http://localhost:4000/instance/connect \
 1. ✅ Webhook global (`WEBHOOK_URL`)
 2. ✅ Webhook da instância (`webhookUrl`)
 3. ✅ Fila RabbitMQ `message`
-4. ✅ Tópico NATS `evolution.vendas.message`
+4. ✅ Tópico NATS `<instanceId>.message`
 5. ✅ Clientes WebSocket conectados
 
 **Total**: **5 destinos** para o mesmo evento!
@@ -1046,7 +1059,7 @@ http://localhost:15672
 **NATS**:
 ```bash
 nats server list
-nats sub "evolution.>"
+nats sub "*.buttonclick"
 ```
 
 ### 5. Configure Dead Letter Queue

@@ -84,7 +84,7 @@ func init() {
 	}
 }
 
-func setupRouter(db *gorm.DB, authDB *sql.DB, sqliteDB *sql.DB, config *config.Config, conn *amqp.Connection, exPath string, runtimeCtx *core.RuntimeContext) (*gin.Engine, whatsmeow_service.WhatsmeowService) {
+func setupRouter(db *gorm.DB, authDB *sql.DB, sqliteDB *sql.DB, config *config.Config, conn *amqp.Connection, exPath string, runtimeCtx *core.RuntimeContext) (*gin.Engine, whatsmeow_service.WhatsmeowService, func()) {
 	killChannel := make(map[string](chan bool))
 	clientPointer := make(map[string]*whatsmeow.Client)
 
@@ -113,23 +113,9 @@ func setupRouter(db *gorm.DB, authDB *sql.DB, sqliteDB *sql.DB, config *config.C
 		)
 	}
 
-	var natsProducer producer_interfaces.Producer
-	if config.NatsUrl != "" {
-		logger.LogInfo("NATS enabled")
-		natsProducer = nats_producer.NewNatsProducer(
-			config.NatsUrl,
-			config.NatsGlobalEnabled,
-			config.NatsGlobalEvents,
-			loggerWrapper,
-		)
-	} else {
-		natsProducer = nats_producer.NewNatsProducer(
-			"",
-			false,
-			nil,
-			loggerWrapper,
-		)
-	}
+	natsProducer := nats_producer.NewNatsProducer(
+		config.NatsUrl, config.NatsGlobalEnabled, config.NatsGlobalEvents, loggerWrapper,
+	)
 
 	webhookProducer := webhook_producer.NewWebhookProducer(config.WebhookUrl, loggerWrapper)
 	websocketProducer := websocket_producer.NewWebsocketProducer(loggerWrapper)
@@ -269,7 +255,7 @@ func setupRouter(db *gorm.DB, authDB *sql.DB, sqliteDB *sql.DB, config *config.C
 		websocket_producer.ServeWs(c.Writer, c.Request, instanceId, websocketProducer)
 	})
 
-	return r, whatsmeowService
+	return r, whatsmeowService, natsProducer.Close
 }
 
 func migrate(db *gorm.DB) {
@@ -419,7 +405,8 @@ func main() {
 		logger.LogInfo("RabbitMQ URL not configured, skipping RabbitMQ connection")
 	}
 
-	r, sessions := setupRouter(db, authDB, sqliteDB, cfg, conn, exPath, runtimeCtx)
+	r, sessions, closeNATS := setupRouter(db, authDB, sqliteDB, cfg, conn, exPath, runtimeCtx)
+	defer closeNATS()
 
 	// Graceful shutdown with heartbeat
 	heartbeatCtx, heartbeatCancel := context.WithCancel(context.Background())

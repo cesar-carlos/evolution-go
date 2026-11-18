@@ -65,6 +65,10 @@ identidade da instância. Desabilitado ou sem essa assinatura, não é encaminha
 Não há novas variáveis nem mudança de nomes de eventos. Mantém-se a entrega
 best effort do NATS existente, sem garantia de persistência ou retry adicional.
 
+Complemento local F-029, ainda sem release: o producer passa a recuperar a
+conexão com tentativas limitadas, propagar indisponibilidade e falhas de flush,
+sem reenviar payloads automaticamente. Consulte [entrega NATS](NATS-DELIVERY.md).
+
 ## Validação
 
 Regressões cobrem aliases/legado, escaping JSON, validação HTTP antes do serviço,
