@@ -136,6 +136,11 @@ teste comprova consistência interna e preservação dos IDs/contexto; não comp
 aceitação do servidor nem seleção real. A homologação descrita em
 [INTERACTIVE-COMPATIBILITY.md](INTERACTIVE-COMPATIBILITY.md) permanece necessária.
 
+Revisão em 2026-11-18: a hipótese histórica acima foi revista em F-028 após
+rejeição 405. O envio da aplicação passa a usar o roteamento product_list,
+mantendo SINGLE_SELECT no protobuf e os IDs/contexto. A biblioteca fixada e
+suas regressões continuam intactas; nenhuma contribuição foi publicada nesta revisão.
+
 Na entrega dos complementos aos PRs #182/#184/#207/#212 e aos PRs de Whatsmeow
 #1146/#1221/#1235 não foram enviados novos comentários nem alteradas branches de
 terceiros. Na consulta de 2026-10-10, não foram encontrados comentários de
