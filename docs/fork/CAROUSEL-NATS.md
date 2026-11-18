@@ -8,7 +8,10 @@ Investigação posterior em 2026-11-18: a validação de payload/mídia de F-026
 não corrigia a ausência de metadados biz no transporte do carrossel. F-028,
 incluído na release 0.7.3-cesar.3, acrescenta esses nós e ajusta o roteamento de
 listas rejeitadas com 405. Veja [compatibilidade interativa](INTERACTIVE-COMPATIBILITY.md).
-Renderização no celular continua pendente de homologação da correção.
+Em 2026-11-18, a lista com uma opção e o carrossel com dois cards foram
+confirmados no celular na 0.7.3-cesar.3, com as três respostas recebidas pela API.
+O [registro de homologação](INTERACTIVE-COMPATIBILITY.md#homologação-móvel-de-f-028--2026-11-18)
+delimita esse cenário; NATS estava desabilitado e não foi homologado.
 
 ## POST /send/carousel
 
@@ -69,7 +72,8 @@ falhas HTTP/upload, tamanho, cancelamento na abertura da sessão e em
 download/upload, preservação de
 metadados e encaminhamento NATS com assinatura, desabilitado e falha do produtor.
 Testes usam HTTP local e produtor falso; não usam WhatsApp, NATS real ou produção.
-Renderização/cliques em Android, iOS e Web continuam dependendo de homologação.
+A homologação móvel de F-028 acima cobre um cenário; os demais clientes e
+combinações em Android, iOS e Web continuam dependendo de homologação específica.
 
 Referências: [issue #51](https://github.com/evolution-foundation/evolution-go/issues/51),
 [issue #193](https://github.com/evolution-foundation/evolution-go/issues/193).

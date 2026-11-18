@@ -679,9 +679,14 @@ Publicação 0.7.3-cesar.2 verificada em 2026-11-17: [evidência da imagem](rele
 - Evidências: `interactive_nodes_test.go` cobre serialização binária dos nós,
   IDs e payload inalterados, precedência, preservação de metadados sem mutação
   do chamador e exclusão de respostas/outros tipos; suítes existentes preservadas.
-- Limitações: hipótese de compatibilidade apoiada por código e relato upstream;
-  resultado remoto após a correção ainda não homologado. Sem envio real,
-  publicação de release ou alteração de produção nesta tarefa. Contrato HTTP/env inalterado.
+- Homologação em 2026-11-18 na 0.7.3-cesar.3: lista com uma opção e carrossel
+  com dois cards confirmados no celular pelo usuário; ambos os envios HTTP 200,
+  sem erro 405. A API recebeu três ButtonClick com os IDs esperados:
+  um `list_response` e dois `template_button_reply`.
+- Limitações: homologação restrita a esse cenário; aparelho/SO/versão do cliente
+  não informados. NATS desabilitado, sem validação de entrega ao broker ou de
+  consumidores externos. Contrato HTTP/env inalterado. Este registro documental
+  não altera produção nem executa novos envios.
 - Retirada: biblioteca fixada fornece os mesmos nós para listas/carrosséis,
   preserva precedência/respostas e passa regressões e homologação em aparelhos.
 - Detalhes: [compatibilidade interativa](INTERACTIVE-COMPATIBILITY.md).
@@ -699,8 +704,9 @@ Swagger não regenerado porque o contrato HTTP permanece inalterado.
 
 Release com F-028 e todos os patches anteriores, sobre a base oficial 0.7.3.
 Sem mudanças de dependências, banco, configuração ou contrato HTTP em relação
-a 0.7.3-cesar.2. Metadados de transporte corrigidos; aceitação da lista e
-renderização do carrossel no celular ainda dependem de homologação real.
+a 0.7.3-cesar.2. Metadados de transporte corrigidos; lista com uma opção e
+carrossel com dois cards homologados no celular em 2026-11-18, com as três
+respostas recebidas pela API. Escopo e limitações no registro de F-028 acima.
 Publicação, digest e implantação são verificados separadamente.
 
 Publicação 0.7.3-cesar.3 verificada em 2026-11-18: [evidência da imagem](releases/v0.7.3-cesar.3.json). Workflow aprovado e pulls anônimos amd64/arm64 confirmados pelo digest.
