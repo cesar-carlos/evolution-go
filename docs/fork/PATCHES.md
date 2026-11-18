@@ -762,4 +762,3 @@ e sessões com checksums e restauração de teste aprovados antes da implantaç�
 API saudável, HTTP público 200, 37 instâncias e as mesmas 21 conectadas; configurações
 e volumes preservados. NATS continua desabilitado globalmente e por instância,
 com URL vazia. Entrega real ao broker permanece não homologada.
-
