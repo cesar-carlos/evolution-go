@@ -714,7 +714,7 @@ Publicação 0.7.3-cesar.3 verificada em 2026-11-18: [evidência da imagem](rele
 ## F-029 — Falhas e recuperação do producer NATS
 
 - Estado: `local`; revisão em 2026-11-18 sobre main `93a82db`, base oficial 0.7.3.
-- Implementação: branch `codex/f029-nats-producer`, ainda sem release. Mantém a dependência
+- Implementação: PR #26 (`96cd492`) e ajuste de teste no PR #27 (`8e92423`), versão `0.7.3-cesar.4`. Mantém a dependência
   nats.go v1.39.0 e os patches anteriores, incluindo F-027/F-028.
 - Problema: conexão nil retornava sucesso, `natsEnable: "true"` não publicava,
   falha inicial não recuperava e URL vazia tentava localhost implicitamente.
@@ -746,3 +746,12 @@ antes das asserções. Preserva a cobertura de indisponibilidade e ausência de 
 nenhuma alteração no producer ou na configuração. Validação local do ajuste:
 100 repetições do teste com race detector, suíte normal e com race do pacote
 `pkg/events/nats` e `go vet` aprovados (Go 1.26.10, Docker Linux/CGO).
+
+## Release 0.7.3-cesar.4
+
+Inclui F-029 e todos os patches anteriores sobre a base oficial 0.7.3.
+Sem mudanças de dependências ou esquema de banco/sessões. As configurações NATS
+existentes permanecem válidas; URL vazia é inerte e NATS não é habilitado pela
+atualização. Entrega real ao broker e consumidores continua pendente de homologação.
+CI da implementação integrada aprovada em [44315003787](https://github.com/cesar-carlos/evolution-go/actions/runs/44315003787).
+Publicação, digest e implantação são verificados separadamente.

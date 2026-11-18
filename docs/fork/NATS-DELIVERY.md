@@ -1,7 +1,7 @@
 # Entrega e recuperação do producer NATS
 
-F-029, correção local preparada sobre 0.7.3-cesar.3 em 2026-11-18, ainda sem
-release. Preserva F-027 (BUTTON_CLICK global), F-028 e os contratos de payload,
+F-029, incluída na versão 0.7.3-cesar.4 em 2026-11-18.
+Preserva F-027 (BUTTON_CLICK global), F-028 e os contratos de payload,
 subject e isolamento entre instâncias. Não habilita NATS automaticamente.
 
 ## Configuração
