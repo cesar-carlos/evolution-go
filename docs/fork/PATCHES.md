@@ -737,3 +737,12 @@ race de `go.mau.fi/whatsmeow` também aprovadas. Formatação limitada aos Go
 alterados e `git diff --check` conferidos. Resultados locais; os checks de CI
 ficam no PR da branch de implementação. Sem WhatsApp/NATS de produção;
 testes do producer usam somente peer TCP local controlado.
+
+Após o merge do PR #26, a execução de CI [44312831193](https://github.com/cesar-carlos/evolution-go/actions/runs/44312831193)
+expôs um deadlock intermitente no teste de recuperação inicial: o dialer simulado
+aguardava um sinal mantendo o lock interno do cliente NATS. O teste agora aguarda
+no callback de atraso de reconexão, executado sem esse lock, e sincroniza o estado
+antes das asserções. Preserva a cobertura de indisponibilidade e ausência de replay;
+nenhuma alteração no producer ou na configuração. Validação local do ajuste:
+100 repetições do teste com race detector, suíte normal e com race do pacote
+`pkg/events/nats` e `go vet` aprovados (Go 1.26.10, Docker Linux/CGO).

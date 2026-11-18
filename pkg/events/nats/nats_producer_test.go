@@ -191,6 +191,7 @@ func TestInitialFailureRecoversWithoutReplaying(t *testing.T) {
 	var calls atomic.Int32
 	ready := make(chan struct{}, 1)
 	gate := make(chan struct{})
+	reconnecting := make(chan struct{}, 1)
 	var release sync.Once
 	t.Cleanup(func() { release.Do(func() { close(gate) }) })
 	notify := func(*nats.Conn) {
@@ -199,21 +200,30 @@ func TestInitialFailureRecoversWithoutReplaying(t *testing.T) {
 		default:
 		}
 	}
-	p, err := newNatsProducer(url, true, nats.ReconnectWait(0), nats.ReconnectJitter(0, 0), nats.ConnectHandler(notify), nats.ReconnectHandler(notify), nats.SetCustomDialer(dialFunc(func(network, address string) (net.Conn, error) {
+	p, err := newNatsProducer(url, true, nats.CustomReconnectDelay(func(int) time.Duration {
+		// This callback runs without the connection lock; a blocked dialer
+		// would hold it and deadlock IsConnected and Publish below.
+		select {
+		case reconnecting <- struct{}{}:
+		default:
+		}
+		<-gate
+		return 0
+	}), nats.ConnectHandler(notify), nats.ReconnectHandler(notify), nats.SetCustomDialer(dialFunc(func(network, address string) (net.Conn, error) {
 		if calls.Add(1) == 1 {
 			return nil, errors.New("initial outage")
 		}
-		<-gate
 		return net.DialTimeout(network, address, time.Second)
 	})))
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		// Release the test dialer even when an assertion fails before recovery.
+		// Release the reconnect callback even when an assertion fails.
 		release.Do(func() { close(gate) })
 		p.Close()
 	})
+	receive(t, reconnecting)
 	if err = p.Produce("buttonclick", []byte("must-not-replay"), "global", ""); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("outage reported success: %v", err)
 	}
