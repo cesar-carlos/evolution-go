@@ -1,0 +1,94 @@
+{
+  "version": "0.7.3-cesar.6",
+  "tag": "v0.7.3-cesar.6",
+  "date": "2026-11-24",
+  "commit": "2e6083ca1c3acf470f0036967ba08db90868508e",
+  "upstream": {
+    "repository": "evolution-foundation/evolution-go",
+    "tag": "0.7.3",
+    "sha": "80d7c72c0727e091425d10f5654b7ccf07e01abe"
+  },
+  "image": "ghcr.io/cesar-carlos/evolution-go",
+  "digest": "sha256:72c9ebc97ef45df4793efc3674c766c376301a357b61bb08b82592d1fa02e206",
+  "platforms": [
+    "linux/amd64",
+    "linux/arm64"
+  ],
+  "aliases": [
+    "0.7.3-cesar.6",
+    "sha-2e6083ca1c3acf470f0036967ba08db90868508e"
+  ],
+  "latest_alias_published": false,
+  "release": "https://github.com/cesar-carlos/evolution-go/releases/tag/v0.7.3-cesar.6",
+  "workflow": "https://github.com/cesar-carlos/evolution-go/actions/runs/45408111242",
+  "previous_release": {
+    "tag": "v0.7.3-cesar.4",
+    "digest": "sha256:d9bf98f80e119b0c4fdb3c0f32007357f72a0a54f108f39fab019caa50a5de32"
+  },
+  "skipped_tag": {
+    "tag": "v0.7.3-cesar.5",
+    "reason": "GitHub Actions was disabled on the fork when the tag was pushed; no GHCR image or GitHub Release was created."
+  },
+  "verification": {
+    "status": "verified",
+    "main_quality": "https://github.com/cesar-carlos/evolution-go/actions/runs/45408001584",
+    "main_quality_result": "success",
+    "release_workflow_result": "success",
+    "workflow_attempt": 1,
+    "anonymous_pull": true,
+    "anonymous_pull_platforms": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "anonymous_config": "Fresh directory containing only config.json with {}",
+    "version_and_sha_aliases_match_digest": true,
+    "manifest_revision_version_source_and_upstream_verified": true,
+    "runtime_smoke_checks": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "anonymous_manifest_inspection": true
+  },
+  "migration": {
+    "changes_since_previous_release": "F-030 maps missing/hidden avatars to 404/403. F-031 arms a 45s instance cooldown after rate-overlimit. F-032 caches and coalesces /user/info. No dependency or database/session schema changes. Tag v0.7.3-cesar.5 was skipped because Actions were disabled."
+  },
+  "limitations": {
+    "real_nats_delivery_validated": false,
+    "new_real_whatsapp_messages_sent": false,
+    "real_whatsapp_user_info_and_avatar_validated": false
+  },
+  "production": {
+    "checked_at_utc": "2026-11-24T14:44:21.847958+00:00",
+    "version": "0.7.3-cesar.6",
+    "image": "ghcr.io/cesar-carlos/evolution-go@sha256:72c9ebc97ef45df4793efc3674c766c376301a357b61bb08b82592d1fa02e206",
+    "health": "healthy",
+    "restart_count": 0,
+    "instances": 38,
+    "connected": 20,
+    "logged_in": 20,
+    "missing_active": 0,
+    "settings_preserved": true,
+    "environment_changed_keys": [
+      "EVOLUTION_IMAGE"
+    ],
+    "nats_global_disabled": true,
+    "nats_url_empty": true,
+    "nats_instances_disabled": true,
+    "mounts_preserved": true,
+    "public_http": 200,
+    "critical_log_markers": {
+      "panic:": 0,
+      "fatal error:": 0,
+      "migration failed": 0
+    },
+    "backup": {
+      "completed": true,
+      "checksum_files": 13,
+      "restore_test_passed": true,
+      "restored_instances": 38,
+      "restored_devices": 23,
+      "restored_sessions": 9520,
+      "auth_schema": 16
+    }
+  }
+}
