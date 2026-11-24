@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	instance_model "github.com/evolution-foundation/evolution-go/pkg/instance/model"
 	logger_wrapper "github.com/evolution-foundation/evolution-go/pkg/logger"
@@ -35,6 +36,17 @@ type userService struct {
 	clientPointer    map[string]*whatsmeow.Client
 	whatsmeowService whatsmeow_service.WhatsmeowService
 	loggerWrapper    *logger_wrapper.LoggerManager
+	now              func() time.Time
+	queryCooldown    time.Duration
+	queryLimit       *instanceQueryLimit
+	userMemo         *userInfoMemo
+}
+
+func (u *userService) currentTime() time.Time {
+	if u != nil && u.now != nil {
+		return u.now()
+	}
+	return time.Now()
 }
 
 type ContactInfo struct {
@@ -421,5 +433,8 @@ func NewUserService(
 		clientPointer:    clientPointer,
 		whatsmeowService: whatsmeowService,
 		loggerWrapper:    loggerWrapper,
+		now:              time.Now,
+		queryLimit:       newInstanceQueryLimit(),
+		userMemo:         newUserInfoMemo(),
 	}
 }

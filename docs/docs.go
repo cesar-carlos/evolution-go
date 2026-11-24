@@ -3620,8 +3620,20 @@ const docTemplate = `{
                             "$ref": "#/definitions/gin.H"
                         }
                     },
+                    "403": {
+                        "description": "Profile picture unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
+                    },
+                    "404": {
+                        "description": "Profile picture not set",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
+                    },
                     "429": {
-                        "description": "WhatsApp rate limit",
+                        "description": "WhatsApp rate limit; Retry-After header in seconds",
                         "schema": {
                             "$ref": "#/definitions/gin.H"
                         }
@@ -3829,7 +3841,7 @@ const docTemplate = `{
                         }
                     },
                     "429": {
-                        "description": "WhatsApp rate limit",
+                        "description": "WhatsApp rate limit; Retry-After header in seconds",
                         "schema": {
                             "$ref": "#/definitions/gin.H"
                         }

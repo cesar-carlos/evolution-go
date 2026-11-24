@@ -5,6 +5,11 @@ As respostas de `/user/block`, `/user/unblock` e `/user/blocklist` agora usam
 `DHash` e o envelope `message`/`data` são preservados. Consulte o
 [guia de migração](../../fork/UPGRADE-0.7.3.md) antes de atualizar consumidores.
 
+`POST /user/avatar` deixa de devolver 500 para foto ausente ou oculta: ausente é
+404 (`profile picture not set`) e oculta/privada é 403 (`profile picture unavailable`).
+Não trate esses status como falha de servidor nem os retente. 429 continua sendo
+`rate-overlimit`. `/user/info` não muda: foto opcional continua 200 com `PictureURL` vazio.
+
 # API de Usuários
 
 Documentação completa dos endpoints para gerenciar perfil, contatos e privacidade.
@@ -67,7 +72,7 @@ Prefira o JID/`@lid` já gravado pela sessão. Para URL de foto confiável, use 
 | HTTP | Quando |
 |------|--------|
 | 400 | Corpo nulo/inválido, números ausentes ou identificador inválido |
-| 429 | WhatsApp `rate-overlimit` (faça backoff; não trate como 500 genérico) |
+| 429 | WhatsApp `rate-overlimit` (respeite `Retry-After`; não trate como 500 genérico e não retente antes do header) |
 | 504 | Timeout/cancelamento na preparação da sessão, resolução de LID ou query usync |
 | 500 | Demais falhas |
 
@@ -77,6 +82,13 @@ opcional de LID e foto compartilha até 5s, sempre respeitando o prazo restante
 e o cancelamento da requisição. O início da sessão propaga o contexto às consultas
 de banco; depois de iniciado, o cliente permanece sob responsabilidade do serviço.
 Erros HTTP usam mensagens públicas, sem detalhes de banco ou credenciais.
+
+Após um 429 de usync, a instância entra em cooldown de 45s: novas consultas não
+enviam IQ ao WhatsApp e repetem 429 com `Retry-After` em segundos (mínimo 1).
+O cooldown é por instância autenticada. Respostas 200 recentes do usync podem ser
+reutilizadas em memória (TTL de 2 min; `PictureURL` no máximo 60s e omitido durante
+o cooldown). Requisições iguais em voo são coalescidas. O cache não atravessa
+instâncias e não grava 429/500.
 
 **Resposta de Sucesso (200)**:
 ```json
@@ -257,9 +269,11 @@ não produz resposta de sucesso.
 |------|--------|
 | 400 | Corpo nulo/inválido, número ausente ou PN/LID inválido |
 | 401 | `apikey` ausente ou não autorizado |
-| 429 | WhatsApp `rate-overlimit` |
+| 403 | Foto oculta ou não autorizada (`profile picture unavailable`) |
+| 404 | Foto ausente ou URL vazia (`profile picture not set`) |
+| 429 | WhatsApp `rate-overlimit` (header `Retry-After`; cooldown de 45s por instância, sem novo IQ) |
 | 504 | Timeout/cancelamento no banco, espera da sessão, resolução de LID ou query de foto |
-| 500 | Sessão indisponível, foto ausente/oculta ou demais falhas |
+| 500 | Sessão indisponível ou demais falhas |
 
 Erros HTTP usam mensagens públicas, sem URL privada da foto, detalhes de banco ou credenciais.
 

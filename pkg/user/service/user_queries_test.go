@@ -134,7 +134,14 @@ func TestUserInfoPreservesBaseEntriesOnOptionalFailures(t *testing.T) {
 				return nil, tc.pictureErr
 			}}
 			uc, err := queryUserInfo(context.Background(), client, nil, []types.JID{first, second, third})
-			if err != nil || len(uc.Users) != 3 || calls != tc.wantCalls {
+			if uc == nil || len(uc.Users) != 3 || calls != tc.wantCalls {
+				t.Fatalf("result=%+v err=%v calls=%d", uc, err, calls)
+			}
+			if errors.Is(tc.pictureErr, whatsmeow.ErrIQRateOverLimit) {
+				if !errors.Is(err, whatsmeow.ErrIQRateOverLimit) {
+					t.Fatalf("picture overlimit should surface: %v", err)
+				}
+			} else if err != nil {
 				t.Fatalf("result=%+v err=%v calls=%d", uc, err, calls)
 			}
 			for jid, info := range uc.Users {

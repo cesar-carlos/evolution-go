@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -20,31 +21,49 @@ func TestWriteUserWAError(t *testing.T) {
 		name       string
 		err        error
 		wantStatus int
+		wantError  string
 	}{
 		{
 			name:       "rate overlimit",
 			err:        fmt.Errorf("usync: %w", whatsmeow.ErrIQRateOverLimit),
 			wantStatus: http.StatusTooManyRequests,
+			wantError:  "WhatsApp rate limit",
+		},
+		{
+			name:       "private picture",
+			err:        fmt.Errorf("picture: %w", whatsmeow.ErrProfilePictureUnauthorized),
+			wantStatus: http.StatusForbidden,
+			wantError:  "profile picture unavailable",
+		},
+		{
+			name:       "missing picture",
+			err:        fmt.Errorf("picture: %w", whatsmeow.ErrProfilePictureNotSet),
+			wantStatus: http.StatusNotFound,
+			wantError:  "profile picture not set",
 		},
 		{
 			name:       "iq timeout",
 			err:        fmt.Errorf("avatar: %w", whatsmeow.ErrIQTimedOut),
 			wantStatus: http.StatusGatewayTimeout,
+			wantError:  "WhatsApp query timeout or cancellation",
 		},
 		{
 			name:       "context deadline",
 			err:        fmt.Errorf("avatar: %w", context.DeadlineExceeded),
 			wantStatus: http.StatusGatewayTimeout,
+			wantError:  "WhatsApp query timeout or cancellation",
 		},
 		{
 			name:       "context canceled",
 			err:        fmt.Errorf("avatar: %w", context.Canceled),
 			wantStatus: http.StatusGatewayTimeout,
+			wantError:  "WhatsApp query timeout or cancellation",
 		},
 		{
 			name:       "other error",
-			err:        errors.New("no profile picture found"),
+			err:        errors.New("postgres://user:private-password@database"),
 			wantStatus: http.StatusInternalServerError,
+			wantError:  "failed to query WhatsApp",
 		},
 	}
 
@@ -62,8 +81,16 @@ func TestWriteUserWAError(t *testing.T) {
 			if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 				t.Fatalf("unmarshal body: %v", err)
 			}
-			if body["error"] == "" {
-				t.Fatal("expected non-empty error field")
+			if body["error"] != tt.wantError {
+				t.Fatalf("error = %q, want %q", body["error"], tt.wantError)
+			}
+			if strings.Contains(w.Body.String(), "postgres") || strings.Contains(w.Body.String(), "private") {
+				t.Fatalf("leaked internal detail: %s", w.Body.String())
+			}
+			if tt.wantStatus == http.StatusTooManyRequests {
+				if got := w.Header().Get("Retry-After"); got == "" {
+					t.Fatal("missing Retry-After")
+				}
 			}
 		})
 	}

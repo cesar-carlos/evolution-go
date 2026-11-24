@@ -144,10 +144,12 @@ func TestAvatarHTTPContextAndErrorMapping(t *testing.T) {
 		{"IQ timeout", whatsmeow.ErrIQTimedOut, http.StatusGatewayTimeout},
 		{"deadline", context.DeadlineExceeded, http.StatusGatewayTimeout},
 		{"cancellation", context.Canceled, http.StatusGatewayTimeout},
-		{"private photo", whatsmeow.ErrProfilePictureUnauthorized, http.StatusInternalServerError},
-		{"missing photo", whatsmeow.ErrProfilePictureNotSet, http.StatusInternalServerError},
+		{"private photo", whatsmeow.ErrProfilePictureUnauthorized, http.StatusForbidden},
+		{"missing photo", whatsmeow.ErrProfilePictureNotSet, http.StatusNotFound},
+		{"wrapped private photo", fmt.Errorf("picture: %w", whatsmeow.ErrProfilePictureUnauthorized), http.StatusForbidden},
+		{"wrapped missing photo", fmt.Errorf("picture: %w", whatsmeow.ErrProfilePictureNotSet), http.StatusNotFound},
 		{"internal error", errors.New("postgres://user:private-password@database"), http.StatusInternalServerError},
-		{"nil result", nil, http.StatusInternalServerError},
+		{"nil result", nil, http.StatusNotFound},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())

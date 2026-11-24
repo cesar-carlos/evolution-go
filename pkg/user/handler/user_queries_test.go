@@ -128,6 +128,9 @@ func TestUserQueriesErrorResponses(t *testing.T) {
 				if w.Code != tc.status || strings.Contains(w.Body.String(), "private") || strings.Contains(w.Body.String(), "postgres") {
 					t.Fatalf("status=%d body=%s", w.Code, w.Body.String())
 				}
+				if tc.status == http.StatusTooManyRequests && w.Header().Get("Retry-After") == "" {
+					t.Fatal("missing Retry-After")
+				}
 			}
 		})
 	}
