@@ -8,7 +8,7 @@
 > [Releases do fork](https://github.com/cesar-carlos/evolution-go/releases) ·
 > [Imagem GHCR](https://github.com/cesar-carlos/evolution-go/pkgs/container/evolution-go)
 
-Versão deste código: **0.7.3-cesar.5**, com [compatibilidade interativa](docs/fork/INTERACTIVE-COMPATIBILITY.md),
+Versão deste código: **0.7.3-cesar.6**, com [compatibilidade interativa](docs/fork/INTERACTIVE-COMPATIBILITY.md),
 previews/imagens, interfaces Manager/Sender e armazenamento/ciclo de sessões corrigidos.
 Inclui [correções de carrossel e BUTTON_CLICK no NATS](docs/fork/CAROUSEL-NATS.md).
 Inclui F-029: [falhas e recuperação do producer NATS](docs/fork/NATS-DELIVERY.md), sem habilitação automática.
