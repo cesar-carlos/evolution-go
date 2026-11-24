@@ -137,16 +137,18 @@ func (u *userService) GetUser(ctx context.Context, data *CheckUserStruct, instan
 	}
 	ctx, cancel := context.WithTimeout(queryContext(ctx), userInfoRequestTimeout+pictureURLEnrichBudget)
 	defer cancel()
-	client, err := u.ensureClientConnectedCtx(ctx, instance.Id)
-	if err != nil {
-		return nil, err
-	}
-	if client.Store.LIDs == nil {
-		// The pinned GetUserInfo implementation persists LID mappings even
-		// when the response is empty, so a missing store would panic there.
-		return nil, errors.New("user LID store unavailable")
-	}
-	return queryUserInfo(ctx, client, client.Store.LIDs, jids)
+	return u.userInfoFromClient(ctx, instance.Id, jids, func() (profileQueryClient, store.LIDStore, error) {
+		client, err := u.ensureClientConnectedCtx(ctx, instance.Id)
+		if err != nil {
+			return nil, nil, err
+		}
+		if client.Store == nil || client.Store.LIDs == nil {
+			// The pinned GetUserInfo implementation persists LID mappings even
+			// when the response is empty, so a missing store would panic there.
+			return nil, nil, errors.New("user LID store unavailable")
+		}
+		return client, client.Store.LIDs, nil
+	})
 }
 
 func queryUserInfo(ctx context.Context, client profileQueryClient, lids store.LIDStore, jids []types.JID) (*UserCollection, error) {
@@ -232,11 +234,18 @@ func (u *userService) GetAvatar(ctx context.Context, data *GetAvatarStruct, inst
 	if err != nil {
 		return nil, err
 	}
+	if err := u.errIfQueryCoolingDown(instance.Id); err != nil {
+		return nil, err
+	}
 	ctx, cancel := context.WithTimeout(queryContext(ctx), avatarRequestTimeout)
 	defer cancel()
 	client, err := u.ensureClientConnectedCtx(ctx, instance.Id)
 	if err != nil {
 		return nil, err
 	}
-	return queryAvatar(ctx, client, client.Store.LIDs, jids[0], data.Preview)
+	pic, err := queryAvatar(ctx, client, client.Store.LIDs, jids[0], data.Preview)
+	if errors.Is(err, whatsmeow.ErrIQRateOverLimit) {
+		return nil, u.markAndWrapOverLimit(instance.Id)
+	}
+	return pic, err
 }

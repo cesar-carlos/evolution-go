@@ -762,3 +762,40 @@ e sessões com checksums e restauração de teste aprovados antes da implantaç�
 API saudável, HTTP público 200, 37 instâncias e as mesmas 21 conectadas; configurações
 e volumes preservados. NATS continua desabilitado globalmente e por instância,
 com URL vazia. Entrega real ao broker permanece não homologada.
+
+## F-030 — Avatar: 404 ausente e 403 oculta, sem 500
+
+- Estado: `local`; revisão em 2026-11-24 sobre a base oficial 0.7.3.
+- Problema/esperado: `POST /user/avatar` devolvia 500 para foto ausente ou oculta;
+  clientes tratavam como falha de servidor e retentavam. Mapear
+  `ErrProfilePictureNotSet` para 404 e `ErrProfilePictureUnauthorized` para 403,
+  com mensagens públicas, sem alterar o service nem o 429 de `rate-overlimit`.
+- Evidências: `pkg/user/handler/user_wa_error_test.go`, `pkg/user/handler/avatar_handler_test.go`.
+- Limitações: não cobre cooldown, cache nem o caller Plug/n8n.
+- Retirada: upstream equivalente preserva 403/404 para foto oculta/ausente, 429
+  para overlimit e as regressões HTTP sem vazar detalhes internos.
+
+## F-031 — Cooldown por instância após rate-overlimit
+
+- Estado: `local`; revisão em 2026-11-24 sobre a base oficial 0.7.3.
+- Problema/esperado: 429 de `POST /user/info` ainda disparava novo IQ se o cliente
+  insistia. Após `ErrIQRateOverLimit` em `GetUser`/`GetAvatar`, cooldown de 45s por
+  `instance.Id`, sem IQ, com `Retry-After` (mínimo 1s). Isolado entre instâncias.
+  Sem env novo. `CheckUser` permanece fora.
+- Evidências: `pkg/user/service/query_budget_test.go`, testes HTTP de 429 em
+  `pkg/user/handler`.
+- Limitações: não altera o teto do WhatsApp nem o backoff do caller Plug/n8n.
+- Retirada: upstream equivalente preserva cooldown por instância, `Retry-After` e
+  as regressões de isolamento/expiração.
+
+## F-032 — Cache curto e coalescência de `/user/info`
+
+- Estado: `local`; revisão em 2026-11-24 sobre a base oficial 0.7.3.
+- Problema/esperado: usync repetido no pico. Coalescência in-flight (mesma instância
+  + JIDs canônicos) e cache em memória (2 min usync, 60s `PictureURL`, máximo 1024
+  entradas), isolado por instância. Durante cooldown, cache de usync pode servir 200
+  sem IQ e sem `PictureURL`. Não cacheia 429/500; não envia `ExistingID`; sem deps novas.
+- Evidências: `pkg/user/service/user_info_cache_test.go`.
+- Limitações: URL de foto no WhatsApp expira; cache não persiste. `CheckUser` fora.
+- Retirada: upstream equivalente preserva coalescência, TTL, isolamento e as
+  regressões de miss cruzado/cooldown.

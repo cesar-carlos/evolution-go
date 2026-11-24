@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
+	"time"
 
 	instance_model "github.com/evolution-foundation/evolution-go/pkg/instance/model"
 	user_service "github.com/evolution-foundation/evolution-go/pkg/user/service"
@@ -17,7 +19,17 @@ func writeUserWAError(ctx *gin.Context, err error) {
 	case errors.Is(err, user_service.ErrInvalidUserNumber):
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid phone number"})
 	case errors.Is(err, whatsmeow.ErrIQRateOverLimit):
+		retryAfter := user_service.QueryRetryAfter(err)
+		seconds := int(retryAfter / time.Second)
+		if seconds < 1 {
+			seconds = 1
+		}
+		ctx.Header("Retry-After", strconv.Itoa(seconds))
 		ctx.JSON(http.StatusTooManyRequests, gin.H{"error": "WhatsApp rate limit"})
+	case errors.Is(err, whatsmeow.ErrProfilePictureUnauthorized):
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "profile picture unavailable"})
+	case errors.Is(err, whatsmeow.ErrProfilePictureNotSet):
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "profile picture not set"})
 	case errors.Is(err, whatsmeow.ErrIQTimedOut),
 		errors.Is(err, context.DeadlineExceeded),
 		errors.Is(err, context.Canceled):
@@ -77,7 +89,7 @@ type UserInfoResponse struct {
 // @Param message body user_service.CheckUserStruct true "User data"
 // @Success 200 {object} UserInfoResponse "success"
 // @Failure 400 {object} gin.H "Error on validation"
-// @Failure 429 {object} gin.H "WhatsApp rate limit"
+// @Failure 429 {object} gin.H "WhatsApp rate limit; Retry-After header in seconds"
 // @Failure 500 {object} gin.H "Internal server error"
 // @Failure 504 {object} gin.H "WhatsApp query timeout"
 // @Router /user/info [post]
@@ -163,7 +175,9 @@ func (u *userHandler) CheckUser(ctx *gin.Context) {
 // @Success 200 {object} AvatarResponse "success"
 // @Failure 400 {object} gin.H "Error on validation"
 // @Failure 401 {object} gin.H "Missing or invalid instance API key"
-// @Failure 429 {object} gin.H "WhatsApp rate limit"
+// @Failure 403 {object} gin.H "Profile picture unavailable"
+// @Failure 404 {object} gin.H "Profile picture not set"
+// @Failure 429 {object} gin.H "WhatsApp rate limit; Retry-After header in seconds"
 // @Failure 500 {object} gin.H "Internal server error"
 // @Failure 504 {object} gin.H "WhatsApp query timeout"
 // @Router /user/avatar [post]
