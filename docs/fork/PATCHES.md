@@ -766,6 +766,7 @@ com URL vazia. Entrega real ao broker permanece não homologada.
 ## F-030 — Avatar: 404 ausente e 403 oculta, sem 500
 
 - Estado: `local`; revisão em 2026-11-24 sobre a base oficial 0.7.3.
+- Implementação: PR #30 (`750fcff`), versão `0.7.3-cesar.5`.
 - Problema/esperado: `POST /user/avatar` devolvia 500 para foto ausente ou oculta;
   clientes tratavam como falha de servidor e retentavam. Mapear
   `ErrProfilePictureNotSet` para 404 e `ErrProfilePictureUnauthorized` para 403,
@@ -778,6 +779,7 @@ com URL vazia. Entrega real ao broker permanece não homologada.
 ## F-031 — Cooldown por instância após rate-overlimit
 
 - Estado: `local`; revisão em 2026-11-24 sobre a base oficial 0.7.3.
+- Implementação: PR #30 (`750fcff`), versão `0.7.3-cesar.5`.
 - Problema/esperado: 429 de `POST /user/info` ainda disparava novo IQ se o cliente
   insistia. Após `ErrIQRateOverLimit` em usync, enriquecimento de foto ou
   `GetAvatar`, cooldown de 45s por `instance.Id`, sem IQ, com `Retry-After`
@@ -792,6 +794,7 @@ com URL vazia. Entrega real ao broker permanece não homologada.
 ## F-032 — Cache curto e coalescência de `/user/info`
 
 - Estado: `local`; revisão em 2026-11-24 sobre a base oficial 0.7.3.
+- Implementação: PR #30 (`750fcff`), versão `0.7.3-cesar.5`.
 - Problema/esperado: usync repetido no pico. Coalescência in-flight (mesma instância
   + JIDs canônicos) e cache em memória (2 min usync, 60s `PictureURL`, máximo 1024
   entradas), isolado por instância. Lookup devolve a chave canônica da resposta
@@ -803,3 +806,11 @@ com URL vazia. Entrega real ao broker permanece não homologada.
 - Limitações: URL de foto no WhatsApp expira; cache não persiste. `CheckUser` fora.
 - Retirada: upstream equivalente preserva coalescência, TTL, isolamento e as
   regressões de miss cruzado/cooldown.
+
+## Release 0.7.3-cesar.5
+
+Inclui F-030, F-031, F-032 e todos os patches anteriores sobre a base oficial 0.7.3.
+Sem mudanças de dependências ou esquema de banco/sessões. Avatar ausente/oculto
+passa a 404/403; após `rate-overlimit`, cooldown de 45s por instância com
+`Retry-After`; `/user/info` agrupa consultas simultâneas e cacheia usync curto.
+Publicação, digest e implantação são verificados separadamente.
