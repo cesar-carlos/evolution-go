@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/evolution-foundation/evolution-go/pkg/utils"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/types"
@@ -20,9 +21,10 @@ const (
 )
 
 type cachedUserEntry struct {
-	info      UserInfo
-	usyncAt   time.Time
-	pictureAt time.Time
+	info        UserInfo
+	responseJID types.JID
+	usyncAt     time.Time
+	pictureAt   time.Time
 }
 
 type inflightUserInfo struct {
@@ -99,7 +101,11 @@ func (u *userService) lookupCachedUserInfo(instanceID string, jids []types.JID) 
 		if cooling || entry.pictureAt.IsZero() || now.Sub(entry.pictureAt) > pictureURLCacheTTL {
 			info.PictureURL = ""
 		}
-		users[jid] = info
+		key := entry.responseJID
+		if key.IsEmpty() {
+			key = jid
+		}
+		users[key] = info
 	}
 	return &UserCollection{Users: users}
 }
@@ -115,22 +121,56 @@ func (u *userService) storeCachedUserInfo(instanceID string, requested []types.J
 		u.userMemo.entries = make(map[string]cachedUserEntry)
 	}
 	for jid, info := range uc.Users {
-		u.putCachedUserLocked(instanceID, jid, info, now)
-	}
-	if len(requested) == 1 && len(uc.Users) == 1 {
-		for _, info := range uc.Users {
-			u.putCachedUserLocked(instanceID, requested[0], info, now)
+		u.putCachedUserLocked(instanceID, jid, jid, info, now)
+		if info.LID == nil {
+			continue
 		}
+		if lid, ok := utils.ParseJID(*info.LID); ok {
+			lid = utils.CanonicalJID(lid).ToNonAD()
+			u.putCachedUserLocked(instanceID, lid, jid, info, now)
+		}
+	}
+	for _, requested := range requested {
+		if requested.IsEmpty() {
+			continue
+		}
+		if _, exists := u.userMemo.entries[userInfoCacheKey(instanceID, requested)]; exists {
+			continue
+		}
+		responseJID, info, ok := matchRequestedUser(uc, requested)
+		if !ok {
+			continue
+		}
+		u.putCachedUserLocked(instanceID, requested, responseJID, info, now)
 	}
 	u.userMemo.evictUserInfoLocked(now)
 }
 
-func (u *userService) putCachedUserLocked(instanceID string, jid types.JID, info UserInfo, now time.Time) {
-	entry := cachedUserEntry{info: cloneUserInfo(info), usyncAt: now}
+func matchRequestedUser(uc *UserCollection, requested types.JID) (types.JID, UserInfo, bool) {
+	if uc == nil {
+		return types.EmptyJID, UserInfo{}, false
+	}
+	if info, ok := uc.Users[requested]; ok {
+		return requested, info, true
+	}
+	if len(uc.Users) != 1 {
+		return types.EmptyJID, UserInfo{}, false
+	}
+	for jid, info := range uc.Users {
+		return jid, info, true
+	}
+	return types.EmptyJID, UserInfo{}, false
+}
+
+func (u *userService) putCachedUserLocked(instanceID string, lookup, response types.JID, info UserInfo, now time.Time) {
+	if lookup.IsEmpty() || response.IsEmpty() {
+		return
+	}
+	entry := cachedUserEntry{info: cloneUserInfo(info), responseJID: response, usyncAt: now}
 	if info.PictureURL != "" {
 		entry.pictureAt = now
 	}
-	u.userMemo.entries[userInfoCacheKey(instanceID, jid)] = entry
+	u.userMemo.entries[userInfoCacheKey(instanceID, lookup)] = entry
 }
 
 func (m *userInfoMemo) evictUserInfoLocked(now time.Time) {
@@ -169,9 +209,38 @@ func (u *userService) userInfoFromClient(ctx context.Context, instanceID string,
 	if err != nil {
 		return nil, err
 	}
-	uc, err := u.coalescedQueryUserInfo(ctx, instanceID, client, lids, jids)
+	return u.coalescedQueryUserInfo(ctx, instanceID, client, lids, jids)
+}
+
+func detachQueryContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	ctx = queryContext(ctx)
+	base := context.WithoutCancel(ctx)
+	if deadline, ok := ctx.Deadline(); ok {
+		return context.WithDeadline(base, deadline)
+	}
+	return context.WithTimeout(base, userInfoRequestTimeout+pictureURLEnrichBudget)
+}
+
+func waitUserInfoCall(ctx context.Context, call *inflightUserInfo) (*UserCollection, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case <-call.done:
+		if call.err != nil {
+			return nil, call.err
+		}
+		return cloneUserCollection(call.uc), nil
+	}
+}
+
+func (u *userService) finishUserInfoQuery(instanceID string, jids []types.JID, uc *UserCollection, err error) (*UserCollection, error) {
 	if errors.Is(err, whatsmeow.ErrIQRateOverLimit) {
-		return nil, u.markAndWrapOverLimit(instanceID)
+		wrapped := u.markAndWrapOverLimit(instanceID)
+		if uc != nil && len(uc.Users) > 0 {
+			u.storeCachedUserInfo(instanceID, jids, uc)
+			return uc, nil
+		}
+		return nil, wrapped
 	}
 	if err == nil {
 		u.storeCachedUserInfo(instanceID, jids, uc)
@@ -181,7 +250,8 @@ func (u *userService) userInfoFromClient(ctx context.Context, instanceID string,
 
 func (u *userService) coalescedQueryUserInfo(ctx context.Context, instanceID string, client profileQueryClient, lids store.LIDStore, jids []types.JID) (*UserCollection, error) {
 	if u == nil || u.userMemo == nil {
-		return queryUserInfo(ctx, client, lids, jids)
+		uc, err := queryUserInfo(ctx, client, lids, jids)
+		return u.finishUserInfoQuery(instanceID, jids, uc, err)
 	}
 	key := userInfoInflightKey(instanceID, jids)
 	u.userMemo.mu.Lock()
@@ -194,27 +264,23 @@ func (u *userService) coalescedQueryUserInfo(ctx context.Context, instanceID str
 		case call.joined <- struct{}{}:
 		default:
 		}
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-call.done:
-			if call.err != nil {
-				return nil, call.err
-			}
-			return cloneUserCollection(call.uc), nil
-		}
+		return waitUserInfoCall(ctx, call)
 	}
 	call := &inflightUserInfo{done: make(chan struct{}), joined: make(chan struct{}, 1)}
 	u.userMemo.inflight[key] = call
 	u.userMemo.mu.Unlock()
 
-	uc, err := queryUserInfo(ctx, client, lids, jids)
-	call.uc = cloneUserCollection(uc)
-	call.err = err
-	close(call.done)
-
-	u.userMemo.mu.Lock()
-	delete(u.userMemo.inflight, key)
-	u.userMemo.mu.Unlock()
-	return cloneUserCollection(uc), err
+	queryCtx, stopQuery := detachQueryContext(ctx)
+	go func() {
+		defer stopQuery()
+		uc, err := queryUserInfo(queryCtx, client, lids, jids)
+		uc, err = u.finishUserInfoQuery(instanceID, jids, uc, err)
+		call.uc = cloneUserCollection(uc)
+		call.err = err
+		close(call.done)
+		u.userMemo.mu.Lock()
+		delete(u.userMemo.inflight, key)
+		u.userMemo.mu.Unlock()
+	}()
+	return waitUserInfoCall(ctx, call)
 }

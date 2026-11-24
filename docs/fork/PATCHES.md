@@ -779,9 +779,10 @@ com URL vazia. Entrega real ao broker permanece não homologada.
 
 - Estado: `local`; revisão em 2026-11-24 sobre a base oficial 0.7.3.
 - Problema/esperado: 429 de `POST /user/info` ainda disparava novo IQ se o cliente
-  insistia. Após `ErrIQRateOverLimit` em `GetUser`/`GetAvatar`, cooldown de 45s por
-  `instance.Id`, sem IQ, com `Retry-After` (mínimo 1s). Isolado entre instâncias.
-  Sem env novo. `CheckUser` permanece fora.
+  insistia. Após `ErrIQRateOverLimit` em usync, enriquecimento de foto ou
+  `GetAvatar`, cooldown de 45s por `instance.Id`, sem IQ, com `Retry-After`
+  (mínimo 1s). Isolado entre instâncias. Overlimit só na foto de `/user/info`
+  continua 200 com usync, mas arma o cooldown. Sem env novo. `CheckUser` permanece fora.
 - Evidências: `pkg/user/service/query_budget_test.go`, testes HTTP de 429 em
   `pkg/user/handler`.
 - Limitações: não altera o teto do WhatsApp nem o backoff do caller Plug/n8n.
@@ -793,8 +794,11 @@ com URL vazia. Entrega real ao broker permanece não homologada.
 - Estado: `local`; revisão em 2026-11-24 sobre a base oficial 0.7.3.
 - Problema/esperado: usync repetido no pico. Coalescência in-flight (mesma instância
   + JIDs canônicos) e cache em memória (2 min usync, 60s `PictureURL`, máximo 1024
-  entradas), isolado por instância. Durante cooldown, cache de usync pode servir 200
-  sem IQ e sem `PictureURL`. Não cacheia 429/500; não envia `ExistingID`; sem deps novas.
+  entradas), isolado por instância. Lookup devolve a chave canônica da resposta
+  (telefone após LID), inclusive para alias `@lid`. A consulta destacada do cancelamento
+  do dono; waiters com contexto válido recebem o resultado. Durante cooldown, cache de
+  usync pode servir 200 sem IQ e sem `PictureURL`. Não cacheia 429 de usync; não envia
+  `ExistingID`; sem deps novas.
 - Evidências: `pkg/user/service/user_info_cache_test.go`.
 - Limitações: URL de foto no WhatsApp expira; cache não persiste. `CheckUser` fora.
 - Retirada: upstream equivalente preserva coalescência, TTL, isolamento e as

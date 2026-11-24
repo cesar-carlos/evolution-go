@@ -204,7 +204,7 @@ func queryUserInfo(ctx context.Context, client profileQueryClient, lids store.LI
 			}
 			uc.Users[jid] = info
 			if errors.Is(picErr, whatsmeow.ErrIQRateOverLimit) {
-				break
+				return uc, picErr
 			}
 		} else {
 			uc.Users[jid] = info
