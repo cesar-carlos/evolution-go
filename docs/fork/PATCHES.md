@@ -822,4 +822,10 @@ Republica F-030, F-031, F-032 e todos os patches anteriores sobre a base oficial
 de banco/sessões em relação a `0.7.3-cesar.5`. Avatar ausente/oculto passa a
 404/403; após `rate-overlimit`, cooldown de 45s por instância com `Retry-After`;
 `/user/info` agrupa consultas simultâneas e cacheia usync curto.
-Publicação, digest e implantação são verificados separadamente.
+
+Publicação e implantação verificadas em 2026-11-24: [evidência da release](releases/v0.7.3-cesar.6.json).
+Workflow aprovado; digest e pulls anônimos amd64/arm64 confirmados. Backup de bancos
+e sessões com checksums e restauração de teste aprovados antes da implantação.
+API saudável, HTTP 200, 38 instâncias e as mesmas 20 conectadas; configurações
+e volumes preservados. NATS continua desabilitado globalmente e por instância,
+com URL vazia. Entrega real ao broker permanece não homologada.
